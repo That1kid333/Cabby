@@ -1,0 +1,23 @@
+{
+  "name": "Cabby — Golf Handicap & Buddy Tracker",
+  "short_name": "Cabby",
+  "description": "Track your World Handicap Index (WHS), calculate course handicaps, and compete on friend leaderboards.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B132B",
+  "theme_color": "#05C46B",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/cabby-logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/cabby-brand.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Shield Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B132B" />
+      <stop offset="50%" stop-color="#1C2541" />
+      <stop offset="100%" stop-color="#0B1D17" />
+    </linearGradient>
+
+    <!-- Emerald Glow -->
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00FF87" />
+      <stop offset="100%" stop-color="#60EFFF" />
+    </linearGradient>
+
+    <!-- Gold Accent -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD700" />
+      <stop offset="100%" stop-color="#FFA500" />
+    </linearGradient>
+
+    <!-- Ball Shading -->
+    <radialGradient id="ballShade" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="70%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#CBD5E1" />
+    </radialGradient>
+
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Outer Shield Badge -->
+  <path d="M256 32 L448 96 V256 C448 376 256 480 256 480 C256 480 64 376 64 256 V96 Z" 
+        fill="url(#bgGrad)" stroke="url(#emeraldGrad)" stroke-width="8" />
+
+  <!-- Inner Subtle Grid Glow -->
+  <path d="M256 48 L428 106 V250 C428 358 256 454 256 454 C256 454 84 358 84 250 V106 Z" 
+        fill="none" stroke="rgba(0, 255, 135, 0.15)" stroke-width="2" stroke-dasharray="6,6" />
+
+  <!-- Golf Ball Centerpiece -->
+  <circle cx="256" cy="280" r="100" fill="url(#ballShade)" filter="drop-shadow(0px 10px 20px rgba(0,0,0,0.5))" />
+  
+  <!-- Ball Dimples Pattern -->
+  <circle cx="220" cy="245" r="5" fill="#94A3B8" opacity="0.6"/>
+  <circle cx="256" cy="235" r="5" fill="#94A3B8" opacity="0.6"/>
+  <circle cx="292" cy="245" r="5" fill="#94A3B8" opacity="0.6"/>
+  <circle cx="205" cy="275" r="5.5" fill="#94A3B8" opacity="0.6"/>
+  <circle cx="240" cy="270" r="5.5" fill="#94A3B8" opacity="0.6"/>
+  <circle cx="272" cy="270" r="5.5" fill="#94A3B8" opacity="0.6"/>
+  <circle cx="307" cy="275" r="5.5" fill="#94A3B8" opacity="0.6"/>
+  <circle cx="220" cy="305" r="5" fill="#94A3B8" opacity="0.6"/>
+  <circle cx="256" cy="310" r="5" fill="#94A3B8" opacity="0.6"/>
+  <circle cx="292" cy="305" r="5" fill="#94A3B8" opacity="0.6"/>
+  <circle cx="236" cy="335" r="4.5" fill="#94A3B8" opacity="0.5"/>
+  <circle cx="276" cy="335" r="4.5" fill="#94A3B8" opacity="0.5"/>
+
+  <!-- Stylish Caddy Visor/Cap overlaying top of ball -->
+  <path d="M140 230 C140 230 200 170 256 170 C312 170 372 230 372 230 C372 230 320 205 256 205 C192 205 140 230 140 230 Z" 
+        fill="url(#emeraldGrad)" filter="url(#glow)" />
+  <path d="M160 210 C190 185 220 170 256 170 C292 170 322 185 352 210 M256 170 V125" 
+        stroke="#0F172A" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Flagpole & Golden Flag on top -->
+  <line x1="256" y1="170" x2="256" y2="100" stroke="url(#goldGrad)" stroke-width="6" stroke-linecap="round"/>
+  <polygon points="256,100 310,120 256,140" fill="url(#goldGrad)" />
+
+  <!-- Letter "C" Ring Overlay -->
+  <path d="M 330 220 A 110 110 0 1 0 330 340" fill="none" stroke="url(#emeraldGrad)" stroke-width="12" stroke-linecap="round" />
+
+  <!-- Stars / Handicap Level Stars -->
+  <polygon points="256,400 262,416 278,416 264,426 270,442 256,432 242,442 248,426 234,416 250,416" fill="url(#goldGrad)" />
+</svg>
