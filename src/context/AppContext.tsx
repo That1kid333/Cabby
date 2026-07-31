@@ -19,13 +19,13 @@ interface AppContextType {
   signInUser: (email: string, pass: string) => Promise<{ success: boolean; message: string }>;
   signOutUser: () => Promise<void>;
 
-  addRound: (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName'>) => Promise<void>;
+  addRound: (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName'>) => Promise<{ success: boolean; error?: string }>;
   deleteRound: (roundId: string) => Promise<void>;
   addFriendByCode: (code: string) => Promise<{ success: boolean; message: string }>;
   addCustomCourse: (course: Omit<GolfCourse, 'id'>) => Promise<GolfCourse | null>;
   reactToActivity: (activityId: string, reactionType: 'fire' | 'golf' | 'applause' | 'trophy') => void;
   verifyRound: (roundId: string) => void;
-  updateProfile: (updatedData: Partial<GolferProfile>) => Promise<void>;
+  updateProfile: (updatedData: Partial<GolferProfile>) => Promise<{ success: boolean; error?: string }>;
   postActivity: (payload: { type: ActivityItem['type']; title: string; subtitle: string }) => Promise<void>;
   bumpGamesWon: (golferId: string) => void;
   applyGameResults: (results: { round: GolfRound; updatedGolfer: Partial<GolferProfile> & { id: string } }[]) => void;
@@ -226,8 +226,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const userRounds = currentUser ? rounds.filter(r => r.golferId === currentUser.id) : [];
 
-  const addRound = async (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName'>) => {
-    if (!currentUser || !supabase) return;
+  const addRound = async (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName'>): Promise<{ success: boolean; error?: string }> => {
+    if (!currentUser) return { success: false, error: 'Please sign in first.' };
+    if (!supabase) return { success: false, error: 'Cabby is not connected to a database.' };
 
     const differential = calculateDifferential(
       roundData.score,
@@ -256,7 +257,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .select()
       .single();
 
-    if (error || !inserted) return;
+    if (error || !inserted) {
+      return { success: false, error: error?.message || 'Could not save that round. Please try again.' };
+    }
 
     const newRound: GolfRound = { ...mapRound(inserted), golferName: currentUser.name };
     setRounds(prev => [newRound, ...prev]);
@@ -308,6 +311,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         reactions: insertedActivity.reactions
       }, ...prev]);
     }
+
+    return { success: true };
   };
 
   const deleteRound = async (roundId: string) => {
@@ -390,19 +395,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
-  const updateProfile = async (updatedData: Partial<GolferProfile>) => {
-    if (!currentUser) return;
+  const updateProfile = async (updatedData: Partial<GolferProfile>): Promise<{ success: boolean; error?: string }> => {
+    if (!currentUser) return { success: false, error: 'Please sign in first.' };
+    if (!supabase) return { success: false, error: 'Cabby is not connected to a database.' };
+
+    const { error } = await supabase.from('golfers').update({
+      name: updatedData.name,
+      home_course: updatedData.homeCourse,
+      bio: updatedData.bio,
+      target_handicap: updatedData.targetHandicap
+    }).eq('id', currentUser.id);
+
+    if (error) return { success: false, error: error.message };
+
     const merged = { ...currentUser, ...updatedData };
     setCurrentUser(merged);
     setGolfers(prev => prev.map(g => (g.id === currentUser.id ? merged : g)));
-    if (supabase) {
-      await supabase.from('golfers').update({
-        name: updatedData.name,
-        home_course: updatedData.homeCourse,
-        bio: updatedData.bio,
-        target_handicap: updatedData.targetHandicap
-      }).eq('id', currentUser.id);
-    }
+    return { success: true };
   };
 
   const postActivity = async (payload: { type: ActivityItem['type']; title: string; subtitle: string }) => {

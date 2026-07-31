@@ -19,6 +19,8 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
 
   const refresh = async () => {
     const updated = await fetchGame(initialGame.id);
@@ -72,24 +74,42 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
   };
 
   const handleStartRound = async () => {
-    await setGameStatus(game.id, 'live');
+    setStarting(true);
+    setActionError(null);
+    const { success, error } = await setGameStatus(game.id, 'live');
+    setStarting(false);
+    if (!success) {
+      setActionError(error || 'Could not start the round. Try again.');
+      return;
+    }
     await refresh();
   };
 
   const commitHole = async (hole: number, value: string) => {
     const strokes = Number(value);
     if (!strokes || strokes <= 0) return;
-    await postHoleScore(game.id, currentUser.id, hole, strokes);
+    const { success, error } = await postHoleScore(game.id, currentUser.id, hole, strokes);
+    if (!success) {
+      setActionError(error ? `Hole ${hole}: ${error}` : `Could not save your score for hole ${hole}. Try again.`);
+    }
   };
 
   const handleCrownWinner = async () => {
-    if (standings.length === 0) return;
+    if (standings.length === 0 || completing) return;
     setCompleting(true);
+    setActionError(null);
 
     const winner = standings[0];
     const winnerGolfer = golfers.find(g => g.id === winner.player.golferId);
 
-    await completeGame(game.id, winner.player.golferId, winnerGolfer?.gamesWon ?? 0);
+    const { success, error } = await completeGame(game.id, winner.player.golferId, winnerGolfer?.gamesWon ?? 0);
+    if (!success) {
+      setActionError(error || 'Could not complete the game. Try again.');
+      setCompleting(false);
+      await refresh();
+      return;
+    }
+
     bumpGamesWon(winner.player.golferId);
 
     // Every finished player's total posts as a real WHS round, so playing a Game
@@ -106,8 +126,8 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
       confetti({ particleCount: 100, spread: 90, origin: { y: 0.6 }, colors: ['#00FF87', '#00E676', '#FFD700', '#FFFFFF'] });
     }
 
-    setCompleting(false);
     await refresh();
+    setCompleting(false);
   };
 
   return (
@@ -129,11 +149,14 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
             </span>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-['Outfit']">{game.courseName}</h1>
             <p className="text-xs text-slate-400">{game.courseLocation} • {game.holesPlayed} holes • {game.date}</p>
+            {actionError && (
+              <p className="text-xs font-bold text-red-400 bg-red-500/10 mt-2 p-2.5 rounded-xl border border-red-500/20 max-w-md">{actionError}</p>
+            )}
           </div>
 
           {isCreator && game.status === 'lobby' && (
-            <button onClick={handleStartRound} className="btn-primary text-xs px-4 py-2.5 font-black flex items-center gap-1.5">
-              <Play size={14} /> Start Round
+            <button onClick={handleStartRound} disabled={starting} className="btn-primary text-xs px-4 py-2.5 font-black flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+              {starting ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Start Round
             </button>
           )}
 

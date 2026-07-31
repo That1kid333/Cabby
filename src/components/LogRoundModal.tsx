@@ -25,6 +25,9 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
   // 18-hole scorecard state
   const [holeScores, setHoleScores] = useState<number[]>(Array(18).fill(4));
 
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   if (!isOpen) return null;
 
   const rating = currentTee?.rating || 72;
@@ -45,11 +48,14 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
     setCurrentTee(course.tees[0] || null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentCourse || !currentTee) return;
+    if (!currentCourse || !currentTee || submitting) return;
 
-    addRound({
+    setSubmitting(true);
+    setError(null);
+
+    const result = await addRound({
       courseId: currentCourse.id,
       courseName: currentCourse.name,
       teeName: currentTee.name,
@@ -62,6 +68,13 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
       pcc,
       notes: notes.trim() || undefined
     });
+
+    setSubmitting(false);
+
+    if (!result.success) {
+      setError(result.error || 'Could not save that round. Please try again.');
+      return;
+    }
 
     onClose();
   };
@@ -275,12 +288,14 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
           </div>
 
           {/* Submit Button */}
+          {error && <p className="text-xs font-bold text-red-400 bg-red-500/10 p-2.5 rounded-xl border border-red-500/20">{error}</p>}
+
           <button
             type="submit"
-            disabled={!currentCourse || !currentTee}
+            disabled={!currentCourse || !currentTee || submitting}
             className="w-full bg-gradient-to-r from-[#05C46B] to-[#00FF87] hover:opacity-95 text-[#070B16] font-black py-3.5 rounded-xl text-base shadow-lg shadow-[#05C46B]/30 transition-all font-['Outfit'] disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Post Round & Recalculate WHS Index →
+            {submitting ? 'Posting…' : 'Post Round & Recalculate WHS Index →'}
           </button>
 
         </form>

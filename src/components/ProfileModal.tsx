@@ -15,17 +15,31 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
   const [homeCourse, setHomeCourse] = useState(currentUser?.homeCourse || '');
   const [bio, setBio] = useState(currentUser?.bio || '');
   const [targetHandicap, setTargetHandicap] = useState(currentUser?.targetHandicap || 0);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen || !currentUser) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await updateProfile({
+    if (submitting) return;
+    setSubmitting(true);
+    setError(null);
+
+    const result = await updateProfile({
       name,
       homeCourse,
       bio,
       targetHandicap: Number(targetHandicap)
     });
+
+    setSubmitting(false);
+
+    if (!result.success) {
+      setError(result.error || 'Could not save your profile. Please try again.');
+      return;
+    }
+
     onClose();
   };
 
@@ -104,11 +118,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             />
           </div>
 
+          {error && <p className="text-xs font-bold text-red-400 bg-red-500/10 p-2.5 rounded-xl border border-red-500/20">{error}</p>}
+
           <button
             type="submit"
-            className="w-full btn-primary font-black py-3 rounded-xl text-sm"
+            disabled={submitting}
+            className="w-full btn-primary font-black py-3 rounded-xl text-sm disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Save Profile Changes
+            {submitting ? 'Saving…' : 'Save Profile Changes'}
           </button>
         </form>
 

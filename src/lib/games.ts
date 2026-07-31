@@ -135,29 +135,61 @@ export async function joinGame(gameId: string, golfer: { id: string; name: strin
   }
 }
 
-export async function setGameStatus(gameId: string, status: GameStatus): Promise<void> {
-  if (!supabase) return;
-  await supabase.from('games').update({ status }).eq('id', gameId);
+export async function setGameStatus(gameId: string, status: GameStatus): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) return { success: false, error: 'Cabby is not connected to a database.' };
+  try {
+    const { error } = await supabase.from('games').update({ status }).eq('id', gameId);
+    if (error) return { success: false, error: friendlyDbError(error.message) };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: friendlyDbError(err?.message) };
+  }
 }
 
-export async function postHoleScore(gameId: string, golferId: string, hole: number, strokes: number): Promise<void> {
-  if (!supabase) return;
-  await supabase
-    .from('game_scores')
-    .upsert(
-      { game_id: gameId, golfer_id: golferId, hole_number: hole, strokes, updated_at: new Date().toISOString() },
-      { onConflict: 'game_id,golfer_id,hole_number' }
-    );
+export async function postHoleScore(gameId: string, golferId: string, hole: number, strokes: number): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) return { success: false, error: 'Cabby is not connected to a database.' };
+  try {
+    const { error } = await supabase
+      .from('game_scores')
+      .upsert(
+        { game_id: gameId, golfer_id: golferId, hole_number: hole, strokes, updated_at: new Date().toISOString() },
+        { onConflict: 'game_id,golfer_id,hole_number' }
+      );
+    if (error) return { success: false, error: friendlyDbError(error.message) };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: friendlyDbError(err?.message) };
+  }
 }
 
-export async function completeGame(gameId: string, winnerGolferId: string, winnerCurrentWins: number): Promise<void> {
-  if (!supabase) return;
-  await supabase
-    .from('games')
-    .update({ status: 'completed', winner_golfer_id: winnerGolferId, completed_at: new Date().toISOString() })
-    .eq('id', gameId);
+/**
+ * Transitions a game from 'live' to 'completed', gated on it still being 'live' at
+ * the moment of the write (the .eq('status', 'live') below). If two clients — or
+ * one client double-clicking through a race window — both try to crown a winner,
+ * only the first succeeds; the second gets updatedRows=0 back and a clear "already
+ * completed" error instead of double-posting rounds and double-counting a win.
+ */
+export async function completeGame(gameId: string, winnerGolferId: string, winnerCurrentWins: number): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) return { success: false, error: 'Cabby is not connected to a database.' };
 
-  await supabase.from('golfers').update({ games_won: winnerCurrentWins + 1 }).eq('id', winnerGolferId);
+  try {
+    const { data, error } = await supabase
+      .from('games')
+      .update({ status: 'completed', winner_golfer_id: winnerGolferId, completed_at: new Date().toISOString() })
+      .eq('id', gameId)
+      .eq('status', 'live')
+      .select();
+
+    if (error) return { success: false, error: friendlyDbError(error.message) };
+    if (!data || data.length === 0) return { success: false, error: 'This game was already completed.' };
+
+    const { error: winErr } = await supabase.from('golfers').update({ games_won: winnerCurrentWins + 1 }).eq('id', winnerGolferId);
+    if (winErr) return { success: false, error: friendlyDbError(winErr.message) };
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: friendlyDbError(err?.message) };
+  }
 }
 
 export function subscribeToGame(gameId: string, onChange: () => void): () => void {

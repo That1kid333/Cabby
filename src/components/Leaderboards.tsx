@@ -234,7 +234,9 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpe
                     <span className="text-2xl font-black text-[#00FF87] font-['Outfit']">
                       {formatHandicapIndex(golfer.handicapIndex)}
                     </span>
-                    <p className="text-[10px] text-slate-400">{golfer.totalRounds} rounds logged</p>
+                    <p className="text-[10px] text-slate-400">
+                      {golfer.totalRounds === 0 ? 'WHS starting index' : `${golfer.totalRounds} rounds logged`}
+                    </p>
                   </div>
                 )}
 

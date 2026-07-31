@@ -50,17 +50,32 @@ export const HandicapCard: React.FC<HandicapCardProps> = ({
             </div>
 
             <div className="flex items-baseline gap-4">
-              <h1 className="text-6xl sm:text-7xl font-black tracking-tight text-white font-['Outfit'] drop-shadow-md">
-                {formatHandicapIndex(handicapIndex)}
-              </h1>
+              <div>
+                <h1 className="text-6xl sm:text-7xl font-black tracking-tight text-white font-['Outfit'] drop-shadow-md leading-none">
+                  {formatHandicapIndex(handicapIndex)}
+                </h1>
+                {totalEvaluatedRounds === 0 && (
+                  <span className="inline-block mt-2 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#FFD700]/20 text-[#FFD700] border border-[#FFD700]/40">
+                    WHS starting index — not a score
+                  </span>
+                )}
+              </div>
               <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-[#00FF87] font-bold text-sm">
-                  <TrendingDown size={18} />
-                  <span>Lowest Index: {formatHandicapIndex(currentUser.lowestHandicapIndex)}</span>
-                </div>
-                <p className="text-xs text-slate-400">
-                  Target: {currentUser.targetHandicap ? formatHandicapIndex(currentUser.targetHandicap) : 'Scratch (0.0)'}
-                </p>
+                {totalEvaluatedRounds === 0 ? (
+                  <p className="text-xs text-slate-400 max-w-[180px]">
+                    Every new golfer starts here. It drops once you post rounds.
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-1.5 text-[#00FF87] font-bold text-sm">
+                      <TrendingDown size={18} />
+                      <span>Lowest Index: {formatHandicapIndex(currentUser.lowestHandicapIndex)}</span>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      Target: {currentUser.targetHandicap ? formatHandicapIndex(currentUser.targetHandicap) : 'Scratch (0.0)'}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
