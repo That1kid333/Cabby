@@ -32,11 +32,11 @@ export const StartGameModal: React.FC<StartGameModalProps> = ({ isOpen, onClose,
     setCreating(true);
     setError(null);
 
-    const game = await createGame({ name: course.name, location: course.location }, holes, currentUser, tee);
+    const { game, error: createError } = await createGame({ name: course.name, location: course.location }, holes, currentUser, tee);
 
     setCreating(false);
     if (!game) {
-      setError('Could not start the game. Check your connection and try again.');
+      setError(createError || 'Could not start the game. Check your connection and try again.');
       return;
     }
 

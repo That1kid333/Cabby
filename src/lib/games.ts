@@ -53,62 +53,86 @@ export async function fetchGame(gameId: string): Promise<Game | null> {
   return mapGame(data);
 }
 
+function friendlyDbError(rawMessage: string | undefined): string {
+  if (!rawMessage) return 'Something went wrong saving that. Please try again.';
+  if (/relation .* does not exist/i.test(rawMessage)) {
+    return "The Games feature's database tables haven't been set up yet — run the latest supabase/schema.sql in the Supabase SQL editor, then try again.";
+  }
+  if (/row-level security/i.test(rawMessage)) {
+    return 'The database rejected that save (row-level security). Run the latest supabase/schema.sql in the Supabase SQL editor, then try again.';
+  }
+  return rawMessage;
+}
+
 export async function createGame(
   course: { name: string; location?: string },
   holesPlayed: 9 | 18,
   creator: { id: string; name: string },
   tee: TeeBox
-): Promise<Game | null> {
-  if (!supabase) return null;
+): Promise<{ game: Game | null; error?: string }> {
+  if (!supabase) return { game: null, error: 'Cabby is not connected to a database.' };
 
-  const { data: gameRow, error: gErr } = await supabase
-    .from('games')
-    .insert({
-      course_name: course.name,
-      course_location: course.location,
-      holes_played: holesPlayed,
-      status: 'lobby',
-      created_by: creator.id
-    })
-    .select()
-    .single();
+  try {
+    const { data: gameRow, error: gErr } = await supabase
+      .from('games')
+      .insert({
+        course_name: course.name,
+        course_location: course.location,
+        holes_played: holesPlayed,
+        status: 'lobby',
+        created_by: creator.id
+      })
+      .select()
+      .single();
 
-  if (gErr || !gameRow) return null;
+    if (gErr || !gameRow) return { game: null, error: friendlyDbError(gErr?.message) };
 
-  const joined = await joinGame(gameRow.id, creator, tee);
-  if (!joined) return null;
+    const joined = await joinGame(gameRow.id, creator, tee);
+    if (!joined.player) return { game: null, error: joined.error };
 
-  return fetchGame(gameRow.id);
+    const game = await fetchGame(gameRow.id);
+    if (!game) return { game: null, error: 'Game was created but could not be loaded. Try refreshing.' };
+
+    return { game };
+  } catch (err: any) {
+    return { game: null, error: friendlyDbError(err?.message) };
+  }
 }
 
-export async function joinGame(gameId: string, golfer: { id: string; name: string }, tee: TeeBox): Promise<GamePlayer | null> {
-  if (!supabase) return null;
+export async function joinGame(gameId: string, golfer: { id: string; name: string }, tee: TeeBox): Promise<{ player: GamePlayer | null; error?: string }> {
+  if (!supabase) return { player: null, error: 'Cabby is not connected to a database.' };
 
-  const { data, error } = await supabase
-    .from('game_players')
-    .insert({
-      game_id: gameId,
-      golfer_id: golfer.id,
-      tee_name: tee.name,
-      rating: tee.rating,
-      slope: tee.slope,
-      par: tee.par
-    })
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('game_players')
+      .insert({
+        game_id: gameId,
+        golfer_id: golfer.id,
+        tee_name: tee.name,
+        rating: tee.rating,
+        slope: tee.slope,
+        par: tee.par
+      })
+      .select()
+      .single();
 
-  if (error || !data) return null;
+    if (error || !data) return { player: null, error: friendlyDbError(error?.message) };
 
-  return {
-    id: data.id,
-    gameId: data.game_id,
-    golferId: data.golfer_id,
-    golferName: golfer.name,
-    teeName: data.tee_name,
-    rating: Number(data.rating),
-    slope: data.slope,
-    par: data.par
-  };
+    return {
+      player: {
+        id: data.id,
+        gameId: data.game_id,
+        golferId: data.golfer_id,
+        golferName: golfer.name,
+        teeName: data.tee_name,
+        rating: Number(data.rating),
+        slope: data.slope,
+        par: data.par
+      }
+    };
+  } catch (err: any) {
+    return { player: null, error: friendlyDbError(err?.message) };
+  }
 }
 
 export async function setGameStatus(gameId: string, status: GameStatus): Promise<void> {

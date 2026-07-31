@@ -17,8 +17,8 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
   const [game, setGame] = useState<Game>(initialGame);
   const [myScores, setMyScores] = useState<Record<number, string>>({});
   const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
-  const [selectedTee, setSelectedTee] = useState<TeeBox | null>(null);
 
   const refresh = async () => {
     const updated = await fetchGame(initialGame.id);
@@ -61,8 +61,13 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
 
   const handleJoin = async (tee: TeeBox) => {
     setJoining(true);
-    await joinGame(game.id, currentUser, tee);
+    setJoinError(null);
+    const { error } = await joinGame(game.id, currentUser, tee);
     setJoining(false);
+    if (error) {
+      setJoinError(error);
+      return;
+    }
     await refresh();
   };
 
@@ -207,6 +212,7 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
           ) : (
             <p className="text-xs text-slate-400">Loading course tees…</p>
           )}
+          {joinError && <p className="text-xs font-bold text-red-400 bg-red-500/10 p-2.5 rounded-xl border border-red-500/20">{joinError}</p>}
         </div>
       )}
 
