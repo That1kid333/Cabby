@@ -136,9 +136,10 @@ export async function completeGame(gameId: string, winnerGolferId: string, winne
 }
 
 export function subscribeToGame(gameId: string, onChange: () => void): () => void {
-  if (!supabase) return () => {};
+  const client = supabase;
+  if (!client) return () => {};
 
-  const channel = supabase
+  const channel = client
     .channel(`game-${gameId}`)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'game_scores', filter: `game_id=eq.${gameId}` }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'game_players', filter: `game_id=eq.${gameId}` }, onChange)
@@ -146,7 +147,7 @@ export function subscribeToGame(gameId: string, onChange: () => void): () => voi
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    client.removeChannel(channel);
   };
 }
 
