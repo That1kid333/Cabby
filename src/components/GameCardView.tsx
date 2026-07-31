@@ -17,7 +17,7 @@ interface GameCardViewProps {
 }
 
 export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, onBack, onGameUpdated, onDeleted }) => {
-  const { currentUser, courses, golfers, rounds, postActivity, bumpGamesWon, applyGameResults } = useApp();
+  const { currentUser, courses, golfers, rounds, postActivity, bumpGamesWon, applyGameResults, applyGameDeletionRollback } = useApp();
   const [game, setGame] = useState<Game>(initialGame);
   const [myScores, setMyScores] = useState<Record<number, string>>({});
   const [joining, setJoining] = useState(false);
@@ -143,7 +143,8 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
       await postActivity({
         type: 'game_won',
         title: `Won the game at ${game.courseName}`,
-        subtitle: `Final score: ${winner.total} over ${winner.holesCompleted} holes, beating ${game.players.length - 1} other golfer${game.players.length - 1 === 1 ? '' : 's'}.`
+        subtitle: `Final score: ${winner.total} over ${winner.holesCompleted} holes, beating ${game.players.length - 1} other golfer${game.players.length - 1 === 1 ? '' : 's'}.`,
+        gameId: game.id
       });
       confetti({ particleCount: 100, spread: 90, origin: { y: 0.6 }, colors: ['#00FF87', '#00E676', '#FFD700', '#FFFFFF'] });
     }
@@ -155,13 +156,14 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
   const handleDeleteGame = async () => {
     setDeleting(true);
     setActionError(null);
-    const { success, error } = await deleteGame(game.id);
+    const { success, error, rollback } = await deleteGame(game);
     setDeleting(false);
     if (!success) {
       setActionError(error || 'Could not delete the game. Try again.');
       setConfirmDelete(false);
       return;
     }
+    if (rollback) applyGameDeletionRollback(rollback);
     onDeleted(game.id);
   };
 
@@ -243,7 +245,7 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-right space-y-2 max-w-[260px]">
                 <p className="text-[11px] text-red-300">
                   {game.status === 'completed'
-                    ? "This removes it from everyone's game history for good. Any rounds already posted from it stay on players' records — deleting the game card won't undo their Handicap Index."
+                    ? "This removes it from everyone's history for good — any rounds it posted are undone and everyone's Handicap Index recalculates without them."
                     : 'This deletes the game and all scores for good.'}
                 </p>
                 <div className="flex justify-end gap-2">

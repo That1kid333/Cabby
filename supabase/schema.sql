@@ -308,3 +308,11 @@ END $$;
 -- Safe to re-run against an already-deployed database that predates these columns.
 ALTER TABLE public.golfers ADD COLUMN IF NOT EXISTS target_handicap NUMERIC(4, 1);
 ALTER TABLE public.rounds ADD COLUMN IF NOT EXISTS verified_count INTEGER DEFAULT 1;
+
+-- Links a round/activity post back to the game that created it, so deleting a
+-- game actually cleans up everything it caused instead of leaving orphaned
+-- rounds and activity posts (and stale handicap stats) behind. Added after the
+-- fact via ALTER, since `games` doesn't exist yet at the point rounds/activity_feed
+-- are first created above.
+ALTER TABLE public.rounds ADD COLUMN IF NOT EXISTS game_id UUID REFERENCES public.games(id) ON DELETE CASCADE;
+ALTER TABLE public.activity_feed ADD COLUMN IF NOT EXISTS game_id UUID REFERENCES public.games(id) ON DELETE CASCADE;

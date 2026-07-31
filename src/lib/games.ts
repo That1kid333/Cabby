@@ -218,12 +218,104 @@ export async function completeGame(gameId: string, winnerGolferId: string, winne
  * posted from a completed game — those stand as real logged rounds even if
  * the game card itself is removed from history.
  */
-export async function deleteGame(gameId: string): Promise<{ success: boolean; error?: string }> {
+export interface GameDeletionRollback {
+  removedRoundIds: string[];
+  removedActivityIds: string[];
+  updatedGolfers: (Partial<GolferProfile> & { id: string })[];
+}
+
+/**
+ * Deletes a game and fully undoes everything it caused: cascade-removes its
+ * rounds/activity posts (via the game_id FK), then recomputes every affected
+ * golfer's total rounds, best gross, best differential, and Handicap Index
+ * from what's actually left — not a blind "subtract one round" patch, since
+ * WHS uses your best-8-of-20 rounds, not a simple running average. Also
+ * decrements the winner's games_won if the game had been completed.
+ */
+export async function deleteGame(game: Game): Promise<{ success: boolean; error?: string; rollback?: GameDeletionRollback }> {
   if (!supabase) return { success: false, error: 'Cabby is not connected to a database.' };
+
   try {
-    const { error } = await supabase.from('games').delete().eq('id', gameId);
-    if (error) return { success: false, error: friendlyDbError(error.message) };
-    return { success: true };
+    // Snapshot what this game caused before it's gone, so we know what to undo.
+    const { data: relatedRounds } = await supabase.from('rounds').select('id, golfer_id').eq('game_id', game.id);
+    const { data: relatedActivity } = await supabase.from('activity_feed').select('id').eq('game_id', game.id);
+    const affectedGolferIds = Array.from(new Set((relatedRounds || []).map((r: any) => r.golfer_id)));
+
+    const { error: delErr } = await supabase.from('games').delete().eq('id', game.id);
+    if (delErr) return { success: false, error: friendlyDbError(delErr.message) };
+
+    const updatedGolfers: (Partial<GolferProfile> & { id: string })[] = [];
+
+    for (const golferId of affectedGolferIds) {
+      const { data: remainingRows } = await supabase.from('rounds').select('*').eq('golfer_id', golferId);
+
+      const remaining: GolfRound[] = (remainingRows || []).map((r: any) => ({
+        id: r.id,
+        golferId: r.golfer_id,
+        golferName: '',
+        courseId: r.course_name,
+        courseName: r.course_name,
+        teeName: r.tee_name,
+        date: r.date,
+        score: r.score,
+        holesPlayed: r.holes_played,
+        rating: Number(r.rating),
+        slope: r.slope,
+        par: r.par,
+        pcc: Number(r.pcc || 0),
+        differential: Number(r.differential),
+        notes: r.notes
+      }));
+
+      // Replay chronologically to recompute the rolling lowest index — equivalent
+      // to how it's tracked incrementally elsewhere, just re-derived from scratch.
+      const sorted = [...remaining].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      let lowest = 54.0;
+      for (let i = 1; i <= sorted.length; i++) {
+        lowest = Math.min(lowest, calculateHandicapIndex(sorted.slice(0, i)).handicapIndex);
+      }
+      const { handicapIndex } = calculateHandicapIndex(remaining);
+
+      const updatedFields = {
+        total_rounds: remaining.length,
+        best_gross_score: remaining.length ? Math.min(...remaining.map(r => r.score)) : 999,
+        best_differential: remaining.length ? Math.min(...remaining.map(r => r.differential)) : 99.9,
+        handicap_index: handicapIndex,
+        lowest_handicap_index: lowest
+      };
+
+      await supabase.from('golfers').update(updatedFields).eq('id', golferId);
+
+      updatedGolfers.push({
+        id: golferId,
+        totalRounds: updatedFields.total_rounds,
+        bestGrossScore: updatedFields.best_gross_score,
+        bestDifferential: updatedFields.best_differential,
+        handicapIndex: updatedFields.handicap_index,
+        lowestHandicapIndex: updatedFields.lowest_handicap_index
+      });
+    }
+
+    if (game.status === 'completed' && game.winnerGolferId) {
+      const { data: winnerRow } = await supabase.from('golfers').select('games_won').eq('id', game.winnerGolferId).single();
+      if (winnerRow) {
+        const newWins = Math.max(0, Number(winnerRow.games_won || 0) - 1);
+        await supabase.from('golfers').update({ games_won: newWins }).eq('id', game.winnerGolferId);
+
+        const existing = updatedGolfers.find(g => g.id === game.winnerGolferId);
+        if (existing) existing.gamesWon = newWins;
+        else updatedGolfers.push({ id: game.winnerGolferId, gamesWon: newWins });
+      }
+    }
+
+    return {
+      success: true,
+      rollback: {
+        removedRoundIds: (relatedRounds || []).map((r: any) => r.id),
+        removedActivityIds: (relatedActivity || []).map((a: any) => a.id),
+        updatedGolfers
+      }
+    };
   } catch (err: any) {
     return { success: false, error: friendlyDbError(err?.message) };
   }
@@ -378,6 +470,7 @@ export async function postGameResultsAsRounds(
       .from('rounds')
       .insert({
         golfer_id: player.golferId,
+        game_id: game.id,
         course_name: game.courseName,
         tee_name: player.teeName,
         date: game.date,
@@ -431,6 +524,7 @@ export async function postGameResultsAsRounds(
     await supabase.from('activity_feed').insert({
       golfer_id: player.golferId,
       round_id: newRound.id,
+      game_id: game.id,
       type: 'round_logged',
       title: `Logged ${game.holesPlayed} holes in a Game at ${game.courseName}`,
       subtitle: `Shot ${total} • Differential: ${differential}`,

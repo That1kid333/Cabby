@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { GolfCourse, GolferProfile, GolfRound, ActivityItem } from '../types';
 import { supabase, loadCourses, saveCourse } from '../lib/supabase';
 import { calculateDifferential } from '../lib/whsEngine';
+import { GameDeletionRollback } from '../lib/games';
 
 interface AppContextType {
   currentUser: GolferProfile | null;
@@ -26,9 +27,10 @@ interface AppContextType {
   reactToActivity: (activityId: string, reactionType: 'fire' | 'golf' | 'applause' | 'trophy') => void;
   verifyRound: (roundId: string) => void;
   updateProfile: (updatedData: Partial<GolferProfile>) => Promise<{ success: boolean; error?: string }>;
-  postActivity: (payload: { type: ActivityItem['type']; title: string; subtitle: string }) => Promise<void>;
+  postActivity: (payload: { type: ActivityItem['type']; title: string; subtitle: string; gameId?: string }) => Promise<void>;
   bumpGamesWon: (golferId: string) => void;
   applyGameResults: (results: { round: GolfRound; updatedGolfer: Partial<GolferProfile> & { id: string } }[]) => void;
+  applyGameDeletionRollback: (rollback: GameDeletionRollback) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -414,7 +416,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { success: true };
   };
 
-  const postActivity = async (payload: { type: ActivityItem['type']; title: string; subtitle: string }) => {
+  const postActivity = async (payload: { type: ActivityItem['type']; title: string; subtitle: string; gameId?: string }) => {
     if (!currentUser || !supabase) return;
 
     const { data } = await supabase.from('activity_feed').insert({
@@ -422,6 +424,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type: payload.type,
       title: payload.title,
       subtitle: payload.subtitle,
+      game_id: payload.gameId,
       reactions: { fire: 0, golf: 0, applause: 0, trophy: 0 }
     }).select().single();
 
@@ -459,6 +462,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const applyGameDeletionRollback = (rollback: GameDeletionRollback) => {
+    setRounds(prev => prev.filter(r => !rollback.removedRoundIds.includes(r.id)));
+    setActivities(prev => prev.filter(a => !rollback.removedActivityIds.includes(a.id)));
+    setGolfers(prev => prev.map(g => {
+      const match = rollback.updatedGolfers.find(u => u.id === g.id);
+      return match ? { ...g, ...match } : g;
+    }));
+    const myUpdate = rollback.updatedGolfers.find(u => u.id === currentUser?.id);
+    if (myUpdate) {
+      setCurrentUser(prev => (prev ? { ...prev, ...myUpdate } : prev));
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -482,7 +498,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateProfile,
         postActivity,
         bumpGamesWon,
-        applyGameResults
+        applyGameResults,
+        applyGameDeletionRollback
       }}
     >
       {children}
