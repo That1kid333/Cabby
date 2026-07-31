@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, MapPin, Plus, Loader2, CheckCircle2 } from 'lucide-react';
 import { GolfCourse } from '../types';
 import { useApp } from '../context/AppContext';
-import { searchExternalCourses, getExternalCourseTees, ExternalCourseResult, ExternalTee } from '../lib/golfCourseApi';
+import { searchExternalCourses, getExternalCourseTees, getExternalCourseHoles, ExternalCourseResult, ExternalTee } from '../lib/golfCourseApi';
 
 interface CourseSearchProps {
   onSelect: (course: GolfCourse) => void;
@@ -87,12 +87,16 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
     setConfirmingTee(index);
     setError(null);
 
+    // Best-effort — a missing hole-par lookup shouldn't block saving the course.
+    const holes = await getExternalCourseHoles(result.externalId).catch(() => []);
+
     const saved = await addCustomCourse({
       name: result.name,
       location: [result.city, result.state].filter(Boolean).join(', ') || 'Unknown location',
       city: result.city,
       state: result.state,
-      tees: [{ id: '', name: tee.name, color: '#2563EB', rating: tee.rating, slope: tee.slope, par: tee.par, yardage: tee.yardage }]
+      tees: [{ id: '', name: tee.name, color: '#2563EB', rating: tee.rating, slope: tee.slope, par: tee.par, yardage: tee.yardage }],
+      holes: holes.length > 0 ? holes : undefined
     });
 
     setConfirmingTee(null);

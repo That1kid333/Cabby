@@ -20,7 +20,7 @@ import { Trophy, TrendingUp, MapPin, PlusCircle, Swords } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const { currentUser, isAuthenticated } = useApp();
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [activeTab, setActiveTab] = useState<string>(() => (/^#game-/.test(window.location.hash) ? 'games' : 'dashboard'));
 
   // Modals state
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -179,7 +179,7 @@ const AppContent: React.FC = () => {
         isOpen={isAuthModalOpen}
         initialMode={authMode}
         onClose={() => setIsAuthModalOpen(false)}
-        onSuccess={() => setActiveTab('dashboard')}
+        onSuccess={() => setActiveTab(/^#game-/.test(window.location.hash) ? 'games' : 'dashboard')}
       />
 
       <LogRoundModal

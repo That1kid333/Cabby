@@ -8,6 +8,11 @@ export interface TeeBox {
   yardage?: number;
 }
 
+export interface HoleInfo {
+  number: number;
+  par: number;
+}
+
 export interface GolfCourse {
   id: string;
   name: string;
@@ -15,6 +20,7 @@ export interface GolfCourse {
   city?: string;
   state?: string;
   tees: TeeBox[];
+  holes?: HoleInfo[]; // Real per-hole par, when known. Absent for manually-added courses.
 }
 
 export interface StrokeDetail {
@@ -106,6 +112,28 @@ export interface GameScore {
   strokes: number;
 }
 
+export type BetStatus = 'open' | 'settled' | 'cancelled';
+
+export interface GameBetParticipant {
+  golferId: string;
+  golferName: string;
+  agreed: boolean;
+}
+
+export interface GameBet {
+  id: string;
+  gameId: string;
+  createdBy: string;
+  createdByName: string;
+  description: string;
+  amount: number;
+  status: BetStatus;
+  winnerGolferId?: string;
+  createdAt: string;
+  settledAt?: string;
+  participants: GameBetParticipant[];
+}
+
 export interface Game {
   id: string;
   courseName: string;
@@ -119,6 +147,7 @@ export interface Game {
   completedAt?: string;
   players: GamePlayer[];
   scores: GameScore[];
+  bets: GameBet[];
 }
 
 export interface LeaderboardEntry {

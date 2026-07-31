@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import { calculateDifferential } from '../lib/whsEngine';
 import { GolfCourse, TeeBox } from '../types';
 import { CourseSearch } from './CourseSearch';
+import { parseHoleScore } from '../lib/holeScoring';
 
 interface LogRoundModalProps {
   isOpen: boolean;
@@ -22,8 +23,8 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState<string>('');
 
-  // 18-hole scorecard state
-  const [holeScores, setHoleScores] = useState<number[]>(Array(18).fill(4));
+  // 18-hole scorecard state — string inputs (parsed to strokes) so +/- par shorthand works
+  const [holeInputs, setHoleInputs] = useState<string[]>(Array(18).fill('4'));
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,9 +35,12 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
   const slope = currentTee?.slope || 113;
   const par = currentTee?.par || 72;
 
+  const holePar = (holeIndex: number) => currentCourse?.holes?.find(h => h.number === holeIndex + 1)?.par;
+
   // Calculate live total score if in scorecard mode
+  const holeStrokes = holeInputs.map((val, i) => parseHoleScore(val, holePar(i)) ?? 0);
   const calculatedScore = mode === 'scorecard'
-    ? holeScores.reduce((a, b) => a + b, 0)
+    ? holeStrokes.reduce((a, b) => a + b, 0)
     : score;
 
   const previewDifferential = currentTee
@@ -46,6 +50,9 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
   const handleCourseSelected = (course: GolfCourse) => {
     setCurrentCourse(course);
     setCurrentTee(course.tees[0] || null);
+    if (course.holes) {
+      setHoleInputs(Array.from({ length: 18 }, (_, i) => String(course.holes!.find(h => h.number === i + 1)?.par ?? 4)));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -234,17 +241,22 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
               <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
                 18-Hole Score Entry (Total: {calculatedScore})
               </h3>
+              <p className="text-[10px] text-slate-400">
+                {currentCourse?.holes ? 'Enter total strokes, or shorthand relative to par: -1 birdie, E even, +2 double bogey.' : 'Enter your total strokes for each hole.'}
+              </p>
               <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
-                {holeScores.map((hScore, i) => (
+                {holeInputs.map((hInput, i) => (
                   <div key={i} className="text-center bg-white/5 p-2 rounded-xl border border-white/10">
                     <p className="text-[10px] text-slate-400 font-bold">#{i + 1}</p>
+                    {holePar(i) && <p className="text-[9px] text-slate-500">Par {holePar(i)}</p>}
                     <input
-                      type="number"
-                      value={hScore}
+                      type="text"
+                      inputMode="text"
+                      value={hInput}
                       onChange={(e) => {
-                        const newArr = [...holeScores];
-                        newArr[i] = Number(e.target.value);
-                        setHoleScores(newArr);
+                        const newArr = [...holeInputs];
+                        newArr[i] = e.target.value;
+                        setHoleInputs(newArr);
                       }}
                       className="w-full bg-transparent text-center text-white font-bold text-sm focus:outline-none"
                     />

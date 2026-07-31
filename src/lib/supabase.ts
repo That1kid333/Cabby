@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { GolfCourse } from '../types';
+import { GolfCourse, HoleInfo } from '../types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -17,7 +17,7 @@ export const supabase = isSupabaseConfigured
 export async function loadCourses(): Promise<GolfCourse[]> {
   if (!supabase) return [];
 
-  const { data, error } = await supabase.from('courses').select('*, tees:tee_boxes(*)');
+  const { data, error } = await supabase.from('courses').select('*, tees:tee_boxes(*), holes:course_holes(*)');
   if (error || !data) return [];
 
   // Defensive: hide any course stuck with zero tees (e.g. from a partial save
@@ -36,12 +36,18 @@ export async function loadCourses(): Promise<GolfCourse[]> {
       slope: t.slope,
       par: t.par,
       yardage: t.yardage
-    }))
+    })),
+    holes: (c.holes || []).length > 0
+      ? (c.holes || [])
+          .map((h: any) => ({ number: h.hole_number, par: h.par }))
+          .sort((a: any, b: any) => a.number - b.number)
+      : undefined
   }));
 }
 
 /**
  * Saves a course (and its tees) to Supabase so every golfer benefits from it once added.
+ * `holes` is optional real per-hole par data — omitted for manually-entered courses.
  */
 export async function saveCourse(course: Omit<GolfCourse, 'id'>): Promise<GolfCourse | null> {
   if (!supabase) return null;
@@ -78,6 +84,21 @@ export async function saveCourse(course: Omit<GolfCourse, 'id'>): Promise<GolfCo
     return null;
   }
 
+  let savedHoles: HoleInfo[] | undefined;
+  if (course.holes && course.holes.length > 0) {
+    const holeInserts = course.holes.map(h => ({
+      course_id: insertedCourse.id,
+      hole_number: h.number,
+      par: h.par
+    }));
+    const { data: insertedHoles } = await supabase.from('course_holes').insert(holeInserts).select();
+    if (insertedHoles && insertedHoles.length > 0) {
+      savedHoles = insertedHoles.map((h: any) => ({ number: h.hole_number, par: h.par })).sort((a, b) => a.number - b.number);
+    }
+    // Hole-par save failing isn't fatal — the course/tees are still fully usable
+    // for raw stroke entry, just without the +/- par shorthand.
+  }
+
   return {
     id: insertedCourse.id,
     name: insertedCourse.name,
@@ -92,6 +113,7 @@ export async function saveCourse(course: Omit<GolfCourse, 'id'>): Promise<GolfCo
       slope: t.slope,
       par: t.par,
       yardage: t.yardage
-    }))
+    })),
+    holes: savedHoles
   };
 }

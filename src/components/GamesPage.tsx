@@ -3,9 +3,14 @@ import { Swords, Users, History, Trophy, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Avatar } from './Avatar';
 import { Game } from '../types';
-import { fetchGames, playerProgress } from '../lib/games';
+import { fetchGames, fetchGame, playerProgress } from '../lib/games';
 import { StartGameModal } from './StartGameModal';
 import { GameCardView } from './GameCardView';
+
+function parseSharedGameId(): string | null {
+  const match = window.location.hash.match(/^#game-([0-9a-f-]{36})$/i);
+  return match ? match[1] : null;
+}
 
 export const GamesPage: React.FC = () => {
   const { currentUser } = useApp();
@@ -15,7 +20,22 @@ export const GamesPage: React.FC = () => {
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchGames().then(g => { setGames(g); setLoading(false); });
+    fetchGames().then(async (g) => {
+      setGames(g);
+      setLoading(false);
+
+      // A shared game link (#game-<id>) opens straight to that game, even if it
+      // isn't in the normal friends/active list yet.
+      const sharedId = parseSharedGameId();
+      if (sharedId) {
+        const shared = g.find(x => x.id === sharedId) || await fetchGame(sharedId);
+        if (shared) {
+          setGames(prev => (prev.some(x => x.id === shared.id) ? prev : [shared, ...prev]));
+          setSelectedGameId(shared.id);
+        }
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    });
   }, []);
 
   if (!currentUser) return null;
@@ -27,6 +47,11 @@ export const GamesPage: React.FC = () => {
     });
   };
 
+  const handleGameDeleted = (deletedId: string) => {
+    setGames(prev => prev.filter(g => g.id !== deletedId));
+    setSelectedGameId(null);
+  };
+
   const selectedGame = games.find(g => g.id === selectedGameId);
   if (selectedGame) {
     return (
@@ -34,6 +59,7 @@ export const GamesPage: React.FC = () => {
         game={selectedGame}
         onBack={() => setSelectedGameId(null)}
         onGameUpdated={handleGameUpdated}
+        onDeleted={handleGameDeleted}
       />
     );
   }
@@ -46,7 +72,8 @@ export const GamesPage: React.FC = () => {
 
   const myActiveGames = games.filter(g => g.status !== 'completed' && isMine(g));
   const joinableFriendGames = games.filter(g => g.status !== 'completed' && !isMine(g) && isFriendGame(g));
-  const history = games.filter(g => g.status === 'completed' && isMine(g));
+  const history_ = games.filter(g => g.status === 'completed' && isMine(g));
+  const trophies = history_.filter(g => g.winnerGolferId === currentUser.id);
 
   return (
     <div className="space-y-6">
@@ -75,15 +102,41 @@ export const GamesPage: React.FC = () => {
           <GameSection title="Your Active Games" icon={<Swords size={16} className="text-[#00FF87]" />} games={myActiveGames} onSelect={setSelectedGameId} emptyText="No active games. Start one above." />
           <GameSection title="Friends' Live Games" icon={<Users size={16} className="text-[#00FF87]" />} games={joinableFriendGames} onSelect={setSelectedGameId} emptyText="No joinable games from your friends right now." />
 
+          {/* Trophy Case */}
+          <div className="glass-panel p-6 rounded-3xl space-y-3 border-[#FFD700]/30">
+            <h2 className="text-sm font-bold text-[#FFD700] uppercase tracking-wider flex items-center gap-2">
+              <Trophy size={16} /> Trophy Case ({trophies.length})
+            </h2>
+            {trophies.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-4">No wins yet — win a game to start your trophy case.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {trophies.map(g => (
+                  <button
+                    key={g.id}
+                    onClick={() => setSelectedGameId(g.id)}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-[#FFD700]/10 border border-[#FFD700]/30 hover:border-[#FFD700]/60 text-left transition-all"
+                  >
+                    <Trophy size={20} className="text-[#FFD700] shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-white">{g.courseName}</p>
+                      <p className="text-[10px] text-slate-400">{g.date} • beat {g.players.length - 1} other{g.players.length - 1 === 1 ? '' : 's'}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="glass-panel p-6 rounded-3xl space-y-3">
             <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
               <History size={16} className="text-[#00FF87]" /> Game History
             </h2>
-            {history.length === 0 ? (
+            {history_.length === 0 ? (
               <p className="text-xs text-slate-400 text-center py-4">No completed games yet.</p>
             ) : (
               <div className="space-y-2">
-                {history.map(g => {
+                {history_.map(g => {
                   const winner = g.players.find(p => p.golferId === g.winnerGolferId);
                   const won = g.winnerGolferId === currentUser.id;
                   return (

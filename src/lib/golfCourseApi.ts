@@ -52,3 +52,22 @@ export async function getExternalCourseTees(externalId: string): Promise<Externa
     yardage: t.yardage
   }));
 }
+
+export interface ExternalHole {
+  number: number;
+  par: number;
+}
+
+/** Real per-hole par, when OpenGolfAPI has it on file. Returns [] rather than throwing if not. */
+export async function getExternalCourseHoles(externalId: string): Promise<ExternalHole[]> {
+  try {
+    const res = await fetch(`${BASE_URL}/courses/${externalId}/holes`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.holes || [])
+      .filter((h: any) => typeof h.number === 'number' && typeof h.par === 'number')
+      .map((h: any) => ({ number: h.number, par: h.par }));
+  } catch {
+    return [];
+  }
+}

@@ -27,6 +27,19 @@ CREATE TABLE IF NOT EXISTS public.tee_boxes (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 2b. Hole-by-hole par (real data, from OpenGolfAPI where available). Powers
+-- +/- par scoring entry — deliberately left unpopulated for courses added
+-- manually, since we won't fabricate per-hole par nobody gave us.
+CREATE TABLE IF NOT EXISTS public.course_holes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
+  hole_number INTEGER NOT NULL CHECK (hole_number BETWEEN 1 AND 18),
+  par INTEGER NOT NULL,
+  yardage INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(course_id, hole_number)
+);
+
 -- 3. Golfers Profile Table
 CREATE TABLE IF NOT EXISTS public.golfers (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -128,6 +141,30 @@ CREATE TABLE IF NOT EXISTS public.game_scores (
   UNIQUE(game_id, golfer_id, hole_number)
 );
 
+-- 10. Game Bets — freeform friendly wagers scoped to one game. Cabby only
+-- tracks who proposed what, who's in, and whether it's been paid — it never
+-- moves money. Settlement (Apple Pay, Cash App, cash, whatever) happens off-app.
+CREATE TABLE IF NOT EXISTS public.game_bets (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  game_id UUID REFERENCES public.games(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES public.golfers(id) ON DELETE CASCADE,
+  description TEXT NOT NULL,
+  amount NUMERIC(8, 2) NOT NULL DEFAULT 0 CHECK (amount >= 0),
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'settled', 'cancelled')),
+  winner_golfer_id UUID REFERENCES public.golfers(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  settled_at TIMESTAMPTZ
+);
+
+-- 11. Game Bet Participants — who's in on a bet, and whether they've agreed to it.
+CREATE TABLE IF NOT EXISTS public.game_bet_participants (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  bet_id UUID REFERENCES public.game_bets(id) ON DELETE CASCADE,
+  golfer_id UUID REFERENCES public.golfers(id) ON DELETE CASCADE,
+  agreed BOOLEAN NOT NULL DEFAULT false,
+  UNIQUE(bet_id, golfer_id)
+);
+
 -- Track game wins for the "Most Wins" leaderboard without an aggregate query.
 ALTER TABLE public.golfers ADD COLUMN IF NOT EXISTS games_won INTEGER DEFAULT 0;
 
@@ -141,12 +178,15 @@ ALTER TABLE public.golfers ADD COLUMN IF NOT EXISTS games_won INTEGER DEFAULT 0;
 -- it behaves the same whether or not someone clicked that button in the dashboard.
 ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tee_boxes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.course_holes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.golfers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rounds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_feed ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.games ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.game_players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.game_scores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.game_bets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.game_bet_participants ENABLE ROW LEVEL SECURITY;
 
 -- Policies are dropped-and-recreated so this whole file is safe to re-run
 -- against a database that already has an earlier version of these policies.
@@ -161,6 +201,11 @@ DROP POLICY IF EXISTS "Public tee_boxes read access" ON public.tee_boxes;
 CREATE POLICY "Public tee_boxes read access" ON public.tee_boxes FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Users can add tee boxes" ON public.tee_boxes;
 CREATE POLICY "Users can add tee boxes" ON public.tee_boxes FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public course_holes read access" ON public.course_holes;
+CREATE POLICY "Public course_holes read access" ON public.course_holes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can add course holes" ON public.course_holes;
+CREATE POLICY "Users can add course holes" ON public.course_holes FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public golfers read access" ON public.golfers;
 CREATE POLICY "Public golfers read access" ON public.golfers FOR SELECT USING (true);
@@ -198,6 +243,8 @@ DROP POLICY IF EXISTS "Users can create games" ON public.games;
 CREATE POLICY "Users can create games" ON public.games FOR INSERT WITH CHECK (true);
 DROP POLICY IF EXISTS "Users can update games" ON public.games;
 CREATE POLICY "Users can update games" ON public.games FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Users can delete games" ON public.games;
+CREATE POLICY "Users can delete games" ON public.games FOR DELETE USING (true);
 
 DROP POLICY IF EXISTS "Public game_players read access" ON public.game_players;
 CREATE POLICY "Public game_players read access" ON public.game_players FOR SELECT USING (true);
@@ -210,6 +257,22 @@ DROP POLICY IF EXISTS "Users can post game scores" ON public.game_scores;
 CREATE POLICY "Users can post game scores" ON public.game_scores FOR INSERT WITH CHECK (true);
 DROP POLICY IF EXISTS "Users can update game scores" ON public.game_scores;
 CREATE POLICY "Users can update game scores" ON public.game_scores FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "Public game_bets read access" ON public.game_bets;
+CREATE POLICY "Public game_bets read access" ON public.game_bets FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can propose bets" ON public.game_bets;
+CREATE POLICY "Users can propose bets" ON public.game_bets FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Users can update bets" ON public.game_bets;
+CREATE POLICY "Users can update bets" ON public.game_bets FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Users can delete bets" ON public.game_bets;
+CREATE POLICY "Users can delete bets" ON public.game_bets FOR DELETE USING (true);
+
+DROP POLICY IF EXISTS "Public game_bet_participants read access" ON public.game_bet_participants;
+CREATE POLICY "Public game_bet_participants read access" ON public.game_bet_participants FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can add bet participants" ON public.game_bet_participants;
+CREATE POLICY "Users can add bet participants" ON public.game_bet_participants FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Users can update bet participants" ON public.game_bet_participants;
+CREATE POLICY "Users can update bet participants" ON public.game_bet_participants FOR UPDATE USING (true);
 
 -- Live updates: add the game tables to Supabase's realtime publication so
 -- players see each other's scores and joins update without a manual refresh.
@@ -229,6 +292,16 @@ BEGIN
     SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'game_scores'
   ) THEN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.game_scores;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'game_bets'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.game_bets;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'game_bet_participants'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.game_bet_participants;
   END IF;
 END $$;
 

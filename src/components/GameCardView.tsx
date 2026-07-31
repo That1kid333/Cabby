@@ -1,18 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Crown, Flag, Play, Trophy, UserPlus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Crown, Flag, Play, Trophy, UserPlus, Loader2, Share2 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useApp } from '../context/AppContext';
 import { Avatar } from './Avatar';
 import { Game, TeeBox } from '../types';
-import { fetchGame, subscribeToGame, setGameStatus, postHoleScore, joinGame, completeGame, playerProgress, postGameResultsAsRounds } from '../lib/games';
+import { fetchGame, subscribeToGame, setGameStatus, postHoleScore, joinGame, completeGame, deleteGame, playerProgress, postGameResultsAsRounds } from '../lib/games';
+import { parseHoleScore } from '../lib/holeScoring';
+import { ShareGameModal } from './ShareGameModal';
+import { BettingPanel } from './BettingPanel';
 
 interface GameCardViewProps {
   game: Game;
   onBack: () => void;
   onGameUpdated: (game: Game) => void;
+  onDeleted: (gameId: string) => void;
 }
 
-export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, onBack, onGameUpdated }) => {
+export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, onBack, onGameUpdated, onDeleted }) => {
   const { currentUser, courses, golfers, rounds, postActivity, bumpGamesWon, applyGameResults } = useApp();
   const [game, setGame] = useState<Game>(initialGame);
   const [myScores, setMyScores] = useState<Record<number, string>>({});
@@ -21,6 +25,10 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
   const [completing, setCompleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const refresh = async () => {
     const updated = await fetchGame(initialGame.id);
@@ -85,17 +93,31 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
     await refresh();
   };
 
+  const holePar = (hole: number) => matchingCourse?.holes?.find(h => h.number === hole)?.par;
+
   const commitHole = async (hole: number, value: string) => {
-    const strokes = Number(value);
-    if (!strokes || strokes <= 0) return;
+    const strokes = parseHoleScore(value, holePar(hole));
+    if (strokes === null) {
+      if (value.trim()) {
+        setActionError(`Hole ${hole}: enter a valid score${holePar(hole) ? ' (e.g. -1, E, +2, or a total strokes count)' : ' (total strokes taken)'}.`);
+      }
+      return;
+    }
     const { success, error } = await postHoleScore(game.id, currentUser.id, hole, strokes);
     if (!success) {
       setActionError(error ? `Hole ${hole}: ${error}` : `Could not save your score for hole ${hole}. Try again.`);
+    } else {
+      setMyScores(prev => ({ ...prev, [hole]: String(strokes) }));
     }
   };
 
   const handleCrownWinner = async () => {
     if (standings.length === 0 || completing) return;
+    if (standings[0].holesCompleted === 0) {
+      setActionError('No scores have been entered yet — nothing to crown a winner from.');
+      return;
+    }
+    setConfirmEnd(false);
     setCompleting(true);
     setActionError(null);
 
@@ -130,11 +152,29 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
     setCompleting(false);
   };
 
+  const handleDeleteGame = async () => {
+    setDeleting(true);
+    setActionError(null);
+    const { success, error } = await deleteGame(game.id);
+    setDeleting(false);
+    if (!success) {
+      setActionError(error || 'Could not delete the game. Try again.');
+      setConfirmDelete(false);
+      return;
+    }
+    onDeleted(game.id);
+  };
+
   return (
     <div className="space-y-6">
-      <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white font-bold">
-        <ArrowLeft size={14} /> Back to Games
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white font-bold">
+          <ArrowLeft size={14} /> Back to Games
+        </button>
+        <button onClick={() => setShowShare(true)} className="flex items-center gap-1.5 text-xs text-[#00FF87] hover:underline font-bold">
+          <Share2 size={14} /> Share
+        </button>
+      </div>
 
       <div className="glass-panel p-6 sm:p-8 rounded-3xl border-white/10 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -154,25 +194,71 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
             )}
           </div>
 
-          {isCreator && game.status === 'lobby' && (
-            <button onClick={handleStartRound} disabled={starting} className="btn-primary text-xs px-4 py-2.5 font-black flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
-              {starting ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Start Round
-            </button>
-          )}
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              {isCreator && game.status === 'lobby' && (
+                <button onClick={handleStartRound} disabled={starting} className="btn-primary text-xs px-4 py-2.5 font-black flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
+                  {starting ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />} Start Round
+                </button>
+              )}
 
-          {isCreator && game.status === 'live' && (
-            <div className="text-right space-y-1">
-              <button
-                onClick={handleCrownWinner}
-                disabled={!allFinished || completing}
-                className="btn-primary text-xs px-4 py-2.5 font-black flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {completing ? <Loader2 size={14} className="animate-spin" /> : <Trophy size={14} />}
-                {allFinished ? 'Crown The Winner' : 'Waiting For All Players'}
-              </button>
-              {allFinished && <p className="text-[10px] text-slate-400 max-w-[220px]">Posts everyone's score as a real round, updating their Handicap Index.</p>}
+              {isCreator && game.status === 'live' && !confirmEnd && (
+                <button
+                  onClick={() => (allFinished ? handleCrownWinner() : setConfirmEnd(true))}
+                  disabled={completing}
+                  className="btn-primary text-xs px-4 py-2.5 font-black flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {completing ? <Loader2 size={14} className="animate-spin" /> : <Trophy size={14} />}
+                  {allFinished ? 'Crown The Winner' : 'End Game Now'}
+                </button>
+              )}
+
+              {isCreator && (game.status === 'lobby' || game.status === 'live') && !confirmDelete && (
+                <button onClick={() => setConfirmDelete(true)} className="text-xs text-red-400 hover:text-red-300 font-bold px-2 py-2.5">
+                  Delete
+                </button>
+              )}
+              {isCreator && game.status === 'completed' && !confirmDelete && (
+                <button onClick={() => setConfirmDelete(true)} className="text-xs text-slate-400 hover:text-red-400 font-bold px-2 py-2.5">
+                  Remove from history
+                </button>
+              )}
             </div>
-          )}
+
+            {isCreator && game.status === 'live' && confirmEnd && (
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-right space-y-2 max-w-[260px]">
+                <p className="text-[11px] text-amber-300">
+                  Not everyone's finished all {game.holesPlayed} holes. Ending now crowns whoever's lowest right now — only players who finished every hole will have it count toward their Handicap Index.
+                </p>
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => setConfirmEnd(false)} className="text-[11px] text-slate-400 hover:text-white font-bold px-2 py-1">Cancel</button>
+                  <button onClick={handleCrownWinner} disabled={completing} className="text-[11px] bg-amber-500 text-[#070B16] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 disabled:opacity-50">
+                    {completing && <Loader2 size={12} className="animate-spin" />} End It Now
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {confirmDelete && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-right space-y-2 max-w-[260px]">
+                <p className="text-[11px] text-red-300">
+                  {game.status === 'completed'
+                    ? "This removes it from everyone's game history for good. Any rounds already posted from it stay on players' records — deleting the game card won't undo their Handicap Index."
+                    : 'This deletes the game and all scores for good.'}
+                </p>
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => setConfirmDelete(false)} className="text-[11px] text-slate-400 hover:text-white font-bold px-2 py-1">Cancel</button>
+                  <button onClick={handleDeleteGame} disabled={deleting} className="text-[11px] bg-red-500 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 disabled:opacity-50">
+                    {deleting && <Loader2 size={12} className="animate-spin" />} Delete
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {allFinished && game.status === 'live' && (
+              <p className="text-[10px] text-slate-400 max-w-[220px] text-right">Posts everyone's score as a real round, updating their Handicap Index.</p>
+            )}
+          </div>
         </div>
 
         {game.status === 'completed' && game.winnerGolferId && (
@@ -245,12 +331,17 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
           <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
             <Flag size={16} className="text-[#00FF87]" /> Your Scorecard
           </h2>
+          <p className="text-[10px] text-slate-400">
+            {matchingCourse?.holes ? 'Enter total strokes, or shorthand relative to par: -1 birdie, E even, +2 double bogey.' : 'Enter your total strokes for each hole.'}
+          </p>
           <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
             {Array.from({ length: game.holesPlayed }, (_, i) => i + 1).map(hole => (
               <div key={hole} className="text-center bg-white/5 p-2 rounded-xl border border-white/10">
                 <p className="text-[10px] text-slate-400 font-bold">#{hole}</p>
+                {holePar(hole) && <p className="text-[9px] text-slate-500">Par {holePar(hole)}</p>}
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="text"
                   value={myScores[hole] ?? ''}
                   onChange={(e) => setMyScores(prev => ({ ...prev, [hole]: e.target.value }))}
                   onBlur={(e) => commitHole(hole, e.target.value)}
@@ -267,6 +358,10 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
           <p className="text-sm text-slate-300">You're in. Waiting for {isCreator ? 'you to start the round' : 'the host to start the round'}.</p>
         </div>
       )}
+
+      {me && <BettingPanel game={game} currentUser={currentUser} onChanged={refresh} />}
+
+      <ShareGameModal isOpen={showShare} onClose={() => setShowShare(false)} game={game} />
     </div>
   );
 };

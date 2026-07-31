@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Game, GamePlayer, GameScore, GameStatus, TeeBox, GolfRound, GolferProfile } from '../types';
+import { Game, GamePlayer, GameScore, GameBet, GameStatus, TeeBox, GolfRound, GolferProfile } from '../types';
 import { calculateDifferential, calculateHandicapIndex } from './whsEngine';
 
 function mapGame(row: any): Game {
@@ -28,11 +28,31 @@ function mapGame(row: any): Game {
       golferId: s.golfer_id,
       hole: s.hole_number,
       strokes: s.strokes
+    })),
+    bets: (row.bets || []).map((b: any): GameBet => ({
+      id: b.id,
+      gameId: b.game_id,
+      createdBy: b.created_by,
+      createdByName: b.creator?.name || 'Unknown Golfer',
+      description: b.description,
+      amount: Number(b.amount),
+      status: b.status,
+      winnerGolferId: b.winner_golfer_id || undefined,
+      createdAt: b.created_at,
+      settledAt: b.settled_at || undefined,
+      participants: (b.participants || []).map((p: any) => ({
+        golferId: p.golfer_id,
+        golferName: p.golfer?.name || 'Unknown Golfer',
+        agreed: p.agreed
+      }))
     }))
   };
 }
 
-const GAME_SELECT = '*, players:game_players(*, golfer:golfers(name)), scores:game_scores(*)';
+const GAME_SELECT = `*,
+  players:game_players(*, golfer:golfers(name)),
+  scores:game_scores(*),
+  bets:game_bets(*, creator:golfers!game_bets_created_by_fkey(name), participants:game_bet_participants(*, golfer:golfers(name)))`;
 
 export async function fetchGames(): Promise<Game[]> {
   if (!supabase) return [];
@@ -192,6 +212,117 @@ export async function completeGame(gameId: string, winnerGolferId: string, winne
   }
 }
 
+/**
+ * Deletes a game entirely (game_players/game_scores cascade via the FK).
+ * NOTE: does not un-post or roll back any rounds/win counts that were already
+ * posted from a completed game — those stand as real logged rounds even if
+ * the game card itself is removed from history.
+ */
+export async function deleteGame(gameId: string): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) return { success: false, error: 'Cabby is not connected to a database.' };
+  try {
+    const { error } = await supabase.from('games').delete().eq('id', gameId);
+    if (error) return { success: false, error: friendlyDbError(error.message) };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: friendlyDbError(err?.message) };
+  }
+}
+
+/**
+ * Proposes a friendly bet on a game. The proposer is auto-agreed; everyone else
+ * named has to tap Agree themselves. Cabby never moves money — this is purely
+ * a shared ledger for wagers settled off-app (Apple Pay, Cash App, cash, etc.).
+ */
+export async function proposeBet(
+  gameId: string,
+  creator: { id: string; name: string },
+  description: string,
+  amount: number,
+  participantIds: string[]
+): Promise<{ bet: GameBet | null; error?: string }> {
+  if (!supabase) return { bet: null, error: 'Cabby is not connected to a database.' };
+
+  try {
+    const { data: betRow, error: bErr } = await supabase
+      .from('game_bets')
+      .insert({ game_id: gameId, created_by: creator.id, description, amount })
+      .select()
+      .single();
+
+    if (bErr || !betRow) return { bet: null, error: friendlyDbError(bErr?.message) };
+
+    const uniqueParticipantIds = Array.from(new Set([creator.id, ...participantIds]));
+    const participantInserts = uniqueParticipantIds.map(golferId => ({
+      bet_id: betRow.id,
+      golfer_id: golferId,
+      agreed: golferId === creator.id
+    }));
+
+    const { error: pErr } = await supabase.from('game_bet_participants').insert(participantInserts);
+    if (pErr) {
+      await supabase.from('game_bets').delete().eq('id', betRow.id);
+      return { bet: null, error: friendlyDbError(pErr.message) };
+    }
+
+    return {
+      bet: {
+        id: betRow.id,
+        gameId: betRow.game_id,
+        createdBy: betRow.created_by,
+        createdByName: creator.name,
+        description: betRow.description,
+        amount: Number(betRow.amount),
+        status: betRow.status,
+        createdAt: betRow.created_at,
+        participants: uniqueParticipantIds.map(id => ({
+          golferId: id,
+          golferName: id === creator.id ? creator.name : '',
+          agreed: id === creator.id
+        }))
+      }
+    };
+  } catch (err: any) {
+    return { bet: null, error: friendlyDbError(err?.message) };
+  }
+}
+
+export async function agreeToBet(betId: string, golferId: string): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) return { success: false, error: 'Cabby is not connected to a database.' };
+  try {
+    const { error } = await supabase.from('game_bet_participants').update({ agreed: true }).eq('bet_id', betId).eq('golfer_id', golferId);
+    if (error) return { success: false, error: friendlyDbError(error.message) };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: friendlyDbError(err?.message) };
+  }
+}
+
+export async function settleBet(betId: string, winnerGolferId?: string): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) return { success: false, error: 'Cabby is not connected to a database.' };
+  try {
+    const { error } = await supabase
+      .from('game_bets')
+      .update({ status: 'settled', winner_golfer_id: winnerGolferId, settled_at: new Date().toISOString() })
+      .eq('id', betId);
+    if (error) return { success: false, error: friendlyDbError(error.message) };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: friendlyDbError(err?.message) };
+  }
+}
+
+export async function cancelBet(betId: string): Promise<{ success: boolean; error?: string }> {
+  if (!supabase) return { success: false, error: 'Cabby is not connected to a database.' };
+  try {
+    const { error } = await supabase.from('game_bets').delete().eq('id', betId);
+    if (error) return { success: false, error: friendlyDbError(error.message) };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: friendlyDbError(err?.message) };
+  }
+}
+
 export function subscribeToGame(gameId: string, onChange: () => void): () => void {
   const client = supabase;
   if (!client) return () => {};
@@ -201,6 +332,8 @@ export function subscribeToGame(gameId: string, onChange: () => void): () => voi
     .on('postgres_changes', { event: '*', schema: 'public', table: 'game_scores', filter: `game_id=eq.${gameId}` }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'game_players', filter: `game_id=eq.${gameId}` }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'games', filter: `id=eq.${gameId}` }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'game_bets', filter: `game_id=eq.${gameId}` }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'game_bet_participants' }, onChange)
     .subscribe();
 
   return () => {
