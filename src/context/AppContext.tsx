@@ -26,6 +26,8 @@ interface AppContextType {
   reactToActivity: (activityId: string, reactionType: 'fire' | 'golf' | 'applause' | 'trophy') => void;
   verifyRound: (roundId: string) => void;
   updateProfile: (updatedData: Partial<GolferProfile>) => Promise<void>;
+  postActivity: (payload: { type: ActivityItem['type']; title: string; subtitle: string }) => Promise<void>;
+  bumpGamesWon: (golferId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -47,7 +49,8 @@ function mapGolfer(g: any): GolferProfile {
     bestGrossScore: Number(g.best_gross_score ?? 999),
     bestDifferential: Number(g.best_differential ?? 99.9),
     eaglesCount: Number(g.eagles_count ?? 0),
-    holesInOneCount: Number(g.holes_in_one_count ?? 0)
+    holesInOneCount: Number(g.holes_in_one_count ?? 0),
+    gamesWon: Number(g.games_won ?? 0)
   };
 }
 
@@ -283,7 +286,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const activityPayload = {
       golfer_id: currentUser.id,
-      golfer_name: currentUser.name,
       round_id: newRound.id,
       type: isPersonalBest ? 'personal_best' : 'round_logged',
       title: isPersonalBest ? 'New personal best round!' : `Logged ${roundData.holesPlayed} holes at ${roundData.courseName}`,
@@ -296,7 +298,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setActivities(prev => [{
         id: insertedActivity.id,
         golferId: insertedActivity.golfer_id,
-        golferName: insertedActivity.golfer_name,
+        golferName: currentUser.name,
         roundId: insertedActivity.round_id,
         type: insertedActivity.type,
         title: insertedActivity.title,
@@ -402,6 +404,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const postActivity = async (payload: { type: ActivityItem['type']; title: string; subtitle: string }) => {
+    if (!currentUser || !supabase) return;
+
+    const { data } = await supabase.from('activity_feed').insert({
+      golfer_id: currentUser.id,
+      type: payload.type,
+      title: payload.title,
+      subtitle: payload.subtitle,
+      reactions: { fire: 0, golf: 0, applause: 0, trophy: 0 }
+    }).select().single();
+
+    if (data) {
+      setActivities(prev => [{
+        id: data.id,
+        golferId: data.golfer_id,
+        golferName: currentUser.name,
+        roundId: data.round_id,
+        type: data.type,
+        title: data.title,
+        subtitle: data.subtitle,
+        timestamp: data.created_at,
+        reactions: data.reactions
+      }, ...prev]);
+    }
+  };
+
+  const bumpGamesWon = (golferId: string) => {
+    setGolfers(prev => prev.map(g => (g.id === golferId ? { ...g, gamesWon: g.gamesWon + 1 } : g)));
+    if (currentUser?.id === golferId) {
+      setCurrentUser(prev => (prev ? { ...prev, gamesWon: prev.gamesWon + 1 } : prev));
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -422,7 +457,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addCustomCourse,
         reactToActivity,
         verifyRound,
-        updateProfile
+        updateProfile,
+        postActivity,
+        bumpGamesWon
       }}
     >
       {children}

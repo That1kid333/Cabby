@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trophy, Crown, Flame, Award, UserPlus, Sparkles } from 'lucide-react';
+import { Trophy, Crown, Flame, Award, UserPlus, Sparkles, Medal, Feather, Target, Globe, Users } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatHandicapIndex } from '../lib/whsEngine';
 import { Avatar } from './Avatar';
@@ -11,20 +11,26 @@ interface LeaderboardsProps {
 
 export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpenQrScanner }) => {
   const { golfers, currentUser } = useApp();
-  const [filter, setFilter] = useState<'handicap' | 'gross' | 'differential' | 'trophies'>('handicap');
+  const [filter, setFilter] = useState<'handicap' | 'gross' | 'differential' | 'wins' | 'trophies'>('handicap');
+  const [scope, setScope] = useState<'local' | 'global'>('local');
+
+  const visibleGolfers = scope === 'global'
+    ? golfers
+    : golfers.filter(g => currentUser && (g.id === currentUser.id || currentUser.friends.includes(g.id)));
 
   // Sort golfers based on active leaderboard filter
-  const sortedGolfers = [...golfers].sort((a, b) => {
+  const sortedGolfers = [...visibleGolfers].sort((a, b) => {
     if (filter === 'handicap') return a.handicapIndex - b.handicapIndex;
     if (filter === 'gross') return a.bestGrossScore - b.bestGrossScore;
     if (filter === 'differential') return a.bestDifferential - b.bestDifferential;
+    if (filter === 'wins') return b.gamesWon - a.gamesWon;
     if (filter === 'trophies') return (b.eaglesCount + b.holesInOneCount * 5) - (a.eaglesCount + a.holesInOneCount * 5);
     return 0;
   });
 
   return (
     <div className="space-y-6">
-      
+
       {/* Leaderboard Header Banner */}
       <div className="glass-panel p-6 sm:p-8 rounded-3xl border-white/10 relative overflow-hidden bg-gradient-to-r from-[#0C1A2E] via-[#0E1F38] to-[#070D18]">
         <div className="absolute right-0 top-0 w-80 h-80 bg-[#FFD700]/10 rounded-full blur-3xl pointer-events-none" />
@@ -59,6 +65,26 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpe
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Scope Toggle */}
+      <div className="flex bg-[#0E1626] p-1.5 rounded-2xl border border-white/10 w-fit">
+        <button
+          onClick={() => setScope('local')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
+            scope === 'local' ? 'bg-gradient-to-r from-[#05C46B] to-[#00FF87] text-[#070B16] shadow-md' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Users size={14} /> Friends
+        </button>
+        <button
+          onClick={() => setScope('global')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
+            scope === 'global' ? 'bg-gradient-to-r from-[#05C46B] to-[#00FF87] text-[#070B16] shadow-md' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Globe size={14} /> Global
+        </button>
       </div>
 
       {/* Filter Tabs */}
@@ -97,6 +123,17 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpe
         </button>
 
         <button
+          onClick={() => setFilter('wins')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all ${
+            filter === 'wins'
+              ? 'bg-gradient-to-r from-[#05C46B] to-[#00FF87] text-[#070B16] shadow-md'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Crown size={16} /> Most Game Wins
+        </button>
+
+        <button
           onClick={() => setFilter('trophies')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all ${
             filter === 'trophies'
@@ -104,7 +141,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpe
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          <Sparkles size={16} /> Eagles & ACEs Hall
+          <Sparkles size={16} /> Eagles & Aces Hall
         </button>
       </div>
 
@@ -113,14 +150,20 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpe
         {sortedGolfers.length <= 1 && (
           <div className="text-center py-6 space-y-2">
             <p className="text-sm text-slate-300">
-              {sortedGolfers.length === 0 ? "It's quiet in here." : "You're the only golfer here so far."}
+              {sortedGolfers.length === 0
+                ? "It's quiet in here."
+                : scope === 'local'
+                  ? "You're the only golfer here so far."
+                  : 'No golfers on Cabby yet.'}
             </p>
-            <button
-              onClick={onOpenQrShare}
-              className="text-xs text-[#00FF87] hover:underline font-bold"
-            >
-              Share your friend code to start a real leaderboard →
-            </button>
+            {scope === 'local' && (
+              <button
+                onClick={onOpenQrShare}
+                className="text-xs text-[#00FF87] hover:underline font-bold"
+              >
+                Share your friend code to start a real leaderboard →
+              </button>
+            )}
           </div>
         )}
 
@@ -136,20 +179,20 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpe
 
           if (rank === 1) {
             rankBadge = (
-              <span className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FFD700] to-[#FFA500] text-[#070B16] flex items-center justify-center font-extrabold text-sm shadow-md shadow-[#FFD700]/30">
-                🥇
+              <span className="w-8 h-8 rounded-full bg-gradient-to-br from-[#FFD700] to-[#FFA500] text-[#070B16] flex items-center justify-center shadow-md shadow-[#FFD700]/30">
+                <Medal size={16} />
               </span>
             );
           } else if (rank === 2) {
             rankBadge = (
-              <span className="w-8 h-8 rounded-full bg-slate-300 text-[#070B16] flex items-center justify-center font-extrabold text-sm shadow-md">
-                🥈
+              <span className="w-8 h-8 rounded-full bg-slate-300 text-[#070B16] flex items-center justify-center shadow-md">
+                <Medal size={16} />
               </span>
             );
           } else if (rank === 3) {
             rankBadge = (
-              <span className="w-8 h-8 rounded-full bg-amber-700 text-white flex items-center justify-center font-extrabold text-sm shadow-md">
-                🥉
+              <span className="w-8 h-8 rounded-full bg-amber-700 text-white flex items-center justify-center shadow-md">
+                <Medal size={16} />
               </span>
             );
           }
@@ -213,12 +256,24 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpe
                   </div>
                 )}
 
-                {filter === 'trophies' && (
+                {filter === 'wins' && (
                   <div>
-                    <span className="text-xl font-extrabold text-[#FFD700] font-['Outfit']">
-                      🦅 {golfer.eaglesCount} | 🎯 {golfer.holesInOneCount}
+                    <span className="text-2xl font-black text-[#FFD700] font-['Outfit']">
+                      {golfer.gamesWon}
                     </span>
-                    <p className="text-[10px] text-slate-400">Eagles / ACEs</p>
+                    <p className="text-[10px] text-slate-400">Games won</p>
+                  </div>
+                )}
+
+                {filter === 'trophies' && (
+                  <div className="flex items-center gap-3 justify-end">
+                    <span className="flex items-center gap-1 text-lg font-extrabold text-[#FFD700] font-['Outfit']">
+                      <Feather size={16} /> {golfer.eaglesCount}
+                    </span>
+                    <span className="flex items-center gap-1 text-lg font-extrabold text-[#FFD700] font-['Outfit']">
+                      <Target size={16} /> {golfer.holesInOneCount}
+                    </span>
+                    <p className="text-[10px] text-slate-400 hidden sm:block">Eagles / Aces</p>
                   </div>
                 )}
               </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { QrCode, PlusCircle, Trophy, Calculator, TrendingUp, MapPin } from 'lucide-react';
+import { QrCode, PlusCircle, Trophy, Calculator, TrendingUp, MapPin, Swords } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatHandicapIndex } from '../lib/whsEngine';
 import { Avatar } from './Avatar';
@@ -67,6 +67,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <TrendingUp size={16} />
               Handicap
+            </button>
+
+            <button
+              onClick={() => setActiveTab('games')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all ${
+                activeTab === 'games'
+                  ? 'bg-gradient-to-r from-[#00FF87] to-[#00E676] text-[#040711] shadow-md shadow-[#00FF87]/25'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Swords size={16} />
+              Games
             </button>
 
             <button

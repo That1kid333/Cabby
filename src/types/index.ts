@@ -66,6 +66,7 @@ export interface GolferProfile {
   bestDifferential: number;
   eaglesCount: number;
   holesInOneCount: number;
+  gamesWon: number;
 }
 
 export interface ActivityItem {
@@ -73,7 +74,7 @@ export interface ActivityItem {
   golferId: string;
   golferName: string;
   roundId?: string;
-  type: 'round_logged' | 'handicap_dropped' | 'personal_best' | 'hole_in_one' | 'friend_joined';
+  type: 'round_logged' | 'handicap_dropped' | 'personal_best' | 'hole_in_one' | 'friend_joined' | 'game_won';
   title: string;
   subtitle: string;
   timestamp: string;
@@ -84,6 +85,40 @@ export interface ActivityItem {
     trophy: number;
   };
   userReactions?: string[]; // Reaction keys clicked by current user
+}
+
+export type GameStatus = 'lobby' | 'live' | 'completed';
+
+export interface GamePlayer {
+  id: string;
+  gameId: string;
+  golferId: string;
+  golferName: string;
+  teeName: string;
+  rating: number;
+  slope: number;
+  par: number;
+}
+
+export interface GameScore {
+  golferId: string;
+  hole: number;
+  strokes: number;
+}
+
+export interface Game {
+  id: string;
+  courseName: string;
+  courseLocation?: string;
+  holesPlayed: 9 | 18;
+  status: GameStatus;
+  createdBy: string;
+  date: string;
+  winnerGolferId?: string;
+  createdAt: string;
+  completedAt?: string;
+  players: GamePlayer[];
+  scores: GameScore[];
 }
 
 export interface LeaderboardEntry {

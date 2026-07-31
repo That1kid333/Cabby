@@ -14,7 +14,9 @@ import { QrShareModal } from './components/QrShareModal';
 import { QrScannerModal } from './components/QrScannerModal';
 import { ProfileModal } from './components/ProfileModal';
 import { InstallPwaBanner } from './components/InstallPwaBanner';
-import { Trophy, TrendingUp, Calculator, MapPin, PlusCircle } from 'lucide-react';
+import { GamesPage } from './components/GamesPage';
+import { RecentGamesWidget } from './components/RecentGamesWidget';
+import { Trophy, TrendingUp, MapPin, PlusCircle, Swords } from 'lucide-react';
 
 const AppContent: React.FC = () => {
   const { currentUser, isAuthenticated } = useApp();
@@ -66,12 +68,15 @@ const AppContent: React.FC = () => {
                     <div className="lg:col-span-2">
                       <ActivityFeed />
                     </div>
-                    <div>
+                    <div className="space-y-8">
+                      <RecentGamesWidget onOpenGames={() => setActiveTab('games')} />
                       <StatsAnalytics />
                     </div>
                   </div>
                 </div>
               )}
+
+              {activeTab === 'games' && <GamesPage />}
 
               {activeTab === 'leaderboard' && (
                 <Leaderboards
@@ -128,13 +133,13 @@ const AppContent: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setActiveTab('leaderboard')}
+            onClick={() => setActiveTab('games')}
             className={`flex flex-col items-center gap-1 text-[10px] font-bold ${
-              activeTab === 'leaderboard' ? 'text-[#00FF87]' : 'text-slate-400'
+              activeTab === 'games' ? 'text-[#00FF87]' : 'text-slate-400'
             }`}
           >
-            <Trophy size={20} />
-            Leaderboard
+            <Swords size={20} />
+            Games
           </button>
 
           <button
@@ -148,13 +153,13 @@ const AppContent: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setActiveTab('calculator')}
+            onClick={() => setActiveTab('leaderboard')}
             className={`flex flex-col items-center gap-1 text-[10px] font-bold ${
-              activeTab === 'calculator' ? 'text-[#00FF87]' : 'text-slate-400'
+              activeTab === 'leaderboard' ? 'text-[#00FF87]' : 'text-slate-400'
             }`}
           >
-            <Calculator size={20} />
-            Calculator
+            <Trophy size={20} />
+            Leaderboard
           </button>
 
           <button

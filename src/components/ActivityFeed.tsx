@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageCircle, ShieldCheck, Flag } from 'lucide-react';
+import { MessageCircle, ShieldCheck, Flag, Flame, ThumbsUp, Trophy } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Avatar } from './Avatar';
 import { formatRelativeTime } from '../lib/formatTime';
@@ -73,7 +73,7 @@ export const ActivityFeed: React.FC = () => {
                       : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
                   }`}
                 >
-                  🔥 {act.reactions.fire || 0}
+                  <Flame size={14} /> {act.reactions.fire || 0}
                 </button>
 
                 <button
@@ -84,7 +84,7 @@ export const ActivityFeed: React.FC = () => {
                       : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
                   }`}
                 >
-                  ⛳ {act.reactions.golf || 0}
+                  <Flag size={14} /> {act.reactions.golf || 0}
                 </button>
 
                 <button
@@ -95,7 +95,7 @@ export const ActivityFeed: React.FC = () => {
                       : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
                   }`}
                 >
-                  👏 {act.reactions.applause || 0}
+                  <ThumbsUp size={14} /> {act.reactions.applause || 0}
                 </button>
 
                 <button
@@ -106,7 +106,7 @@ export const ActivityFeed: React.FC = () => {
                       : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
                   }`}
                 >
-                  🏆 {act.reactions.trophy || 0}
+                  <Trophy size={14} /> {act.reactions.trophy || 0}
                 </button>
               </div>
 
