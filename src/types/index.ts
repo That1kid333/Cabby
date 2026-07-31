@@ -31,7 +31,6 @@ export interface GolfRound {
   id: string;
   golferId: string;
   golferName: string;
-  golferAvatar?: string;
   courseId: string;
   courseName: string;
   teeName: string;
@@ -55,7 +54,6 @@ export interface GolferProfile {
   name: string;
   email?: string;
   friendCode: string; // Unique friend code like "CB-8821-JT"
-  avatar: string;
   homeCourse: string;
   targetHandicap?: number;
   bio?: string;
@@ -74,7 +72,6 @@ export interface ActivityItem {
   id: string;
   golferId: string;
   golferName: string;
-  golferAvatar: string;
   roundId?: string;
   type: 'round_logged' | 'handicap_dropped' | 'personal_best' | 'hole_in_one' | 'friend_joined';
   title: string;

@@ -23,7 +23,10 @@
 5. **Clubhouse Activity Feed**:
    - Live activity posts of logged rounds, handicap drops, and personal bests.
    - Interactive reactions (🔥, ⛳, 👏, 🏆) and friend score attestation/verification.
-6. **Progressive Web App (PWA)**:
+6. **Real Course Data**:
+   - Search 32,000+ real golf courses (name, location, rating, slope, par) via [OpenGolfAPI](https://opengolfapi.org) — no API key required, no fake/invented ratings.
+   - Any course a golfer adds is saved to the shared database so every other Cabby golfer benefits from it too.
+7. **Progressive Web App (PWA)**:
    - Installable on iOS & Android home screens.
    - Offline round logging via Service Worker cache.
 
@@ -31,9 +34,10 @@
 
 ## 🚀 Stack & Deployment Guide
 
-- **Frontend**: React 18, TypeScript, Vite, Lucide Icons, Canvas Confetti.
-- **Styling**: Modern Vanilla CSS Design System with Glassmorphic Obsidian theme, Emerald accents (`#05C46B`), and Championship Gold (`#FFD700`).
-- **Database / Backend**: Supabase (Schema migration script in `/supabase/schema.sql`) + automatic LocalStorage fallback.
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Lucide Icons, Canvas Confetti.
+- **Styling**: Dark glassmorphic theme with Emerald accents (`#05C46B`) and Championship Gold (`#FFD700`).
+- **Database / Backend**: Supabase — required. Schema in `/supabase/schema.sql`. There is no mock-data or offline-guest mode: without Supabase credentials, sign-up/sign-in are disabled.
+- **Course Data**: [OpenGolfAPI](https://opengolfapi.org) (ODbL-1.0 licensed, free, no signup) for real course search/autofill.
 - **Hosting**: Designed for Netlify & GitHub repository CI/CD (`netlify.toml` included).
 
 ### Deploying to Netlify
@@ -41,6 +45,7 @@
 2. Log into **Netlify** and click **Import from Git**.
 3. Set build command: `npm run build`
 4. Set publish directory: `dist`
-5. (Optional) Add Supabase environment variables:
+5. Add Supabase environment variables (**required** — Cabby has no offline/demo mode):
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
+6. Run `/supabase/schema.sql` in your Supabase project's SQL editor. It's safe to re-run if you've already deployed an earlier version of this schema.

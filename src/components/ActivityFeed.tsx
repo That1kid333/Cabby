@@ -1,6 +1,8 @@
 import React from 'react';
-import { Flame, ThumbsUp, Award, Sparkles, MessageCircle, ShieldCheck } from 'lucide-react';
+import { MessageCircle, ShieldCheck, Flag } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { Avatar } from './Avatar';
+import { formatRelativeTime } from '../lib/formatTime';
 
 export const ActivityFeed: React.FC = () => {
   const { activities, reactToActivity, verifyRound, currentUser } = useApp();
@@ -18,6 +20,14 @@ export const ActivityFeed: React.FC = () => {
         </div>
       </div>
 
+      {activities.length === 0 && (
+        <div className="text-center py-10 space-y-1">
+          <Flag className="mx-auto text-slate-500" size={28} />
+          <p className="text-sm text-slate-300">No activity yet.</p>
+          <p className="text-xs text-slate-400">Post your first round to get the clubhouse feed going.</p>
+        </div>
+      )}
+
       <div className="space-y-4">
         {activities.map((act) => {
           const userReactions = act.userReactions || [];
@@ -30,14 +40,10 @@ export const ActivityFeed: React.FC = () => {
               {/* Header: Golfer Avatar & Info */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <img
-                    src={act.golferAvatar}
-                    alt={act.golferName}
-                    className="w-10 h-10 rounded-xl object-cover ring-2 ring-[#05C46B]"
-                  />
+                  <Avatar name={act.golferName} size={40} />
                   <div>
                     <p className="font-bold text-white text-sm">{act.golferName}</p>
-                    <p className="text-[11px] text-slate-400">{act.timestamp}</p>
+                    <p className="text-[11px] text-slate-400">{formatRelativeTime(act.timestamp)}</p>
                   </div>
                 </div>
 

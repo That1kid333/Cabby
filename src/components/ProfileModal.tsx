@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, LogOut, User, Flag } from 'lucide-react';
+import { X, LogOut } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { Avatar } from './Avatar';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -46,11 +47,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
         <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <img
-              src={currentUser.avatar}
-              alt={currentUser.name}
-              className="w-14 h-14 rounded-2xl object-cover ring-2 ring-[#00FF87]"
-            />
+            <Avatar name={currentUser.name} size={56} />
             <div>
               <h2 className="text-xl font-black text-white font-['Outfit']">{currentUser.name}</h2>
               <p className="text-xs text-[#00FF87] font-bold">Friend Code: {currentUser.friendCode}</p>

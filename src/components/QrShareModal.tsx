@@ -111,7 +111,7 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
               type="text"
               value={friendCodeInput}
               onChange={(e) => setFriendCodeInput(e.target.value)}
-              placeholder="e.g. CB-1975-TW"
+              placeholder="e.g. CB-1234-AB"
               className="flex-1 bg-[#0A0F1D] border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm font-mono font-bold uppercase focus:outline-none focus:border-[#00FF87]"
             />
             <button

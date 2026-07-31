@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { GolfCourse, GolferProfile, GolfRound, ActivityItem } from '../types';
-import { supabase, isSupabaseConfigured, seedDefaultCoursesIfEmpty } from '../lib/supabase';
-import { calculateDifferential, calculateHandicapIndex } from '../lib/whsEngine';
-import { INITIAL_GOLFERS, INITIAL_ROUNDS, INITIAL_ACTIVITIES, INITIAL_COURSES } from '../lib/sampleData';
+import { supabase, loadCourses, saveCourse } from '../lib/supabase';
+import { calculateDifferential } from '../lib/whsEngine';
 
 interface AppContextType {
   currentUser: GolferProfile | null;
@@ -13,17 +12,17 @@ interface AppContextType {
   courses: GolfCourse[];
   activities: ActivityItem[];
   userRounds: GolfRound[];
-  
+  loading: boolean;
+
   // Auth & Actions
   signUpUser: (email: string, pass: string, name: string, homeCourse: string) => Promise<{ success: boolean; message: string }>;
   signInUser: (email: string, pass: string) => Promise<{ success: boolean; message: string }>;
   signOutUser: () => Promise<void>;
-  loginAsGuest: () => void;
-  
-  addRound: (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName' | 'golferAvatar'>) => Promise<void>;
+
+  addRound: (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName'>) => Promise<void>;
   deleteRound: (roundId: string) => Promise<void>;
   addFriendByCode: (code: string) => Promise<{ success: boolean; message: string }>;
-  addCustomCourse: (course: GolfCourse) => Promise<void>;
+  addCustomCourse: (course: Omit<GolfCourse, 'id'>) => Promise<GolfCourse | null>;
   reactToActivity: (activityId: string, reactionType: 'fire' | 'golf' | 'applause' | 'trophy') => void;
   verifyRound: (roundId: string) => void;
   updateProfile: (updatedData: Partial<GolferProfile>) => Promise<void>;
@@ -31,73 +30,91 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+function mapGolfer(g: any): GolferProfile {
+  return {
+    id: g.id,
+    name: g.name,
+    email: g.email,
+    friendCode: g.friend_code,
+    homeCourse: g.home_course || '',
+    bio: g.bio,
+    targetHandicap: g.target_handicap != null ? Number(g.target_handicap) : undefined,
+    friends: [],
+    joinedDate: g.created_at,
+    handicapIndex: Number(g.handicap_index ?? 54.0),
+    lowestHandicapIndex: Number(g.lowest_handicap_index ?? 54.0),
+    totalRounds: Number(g.total_rounds ?? 0),
+    bestGrossScore: Number(g.best_gross_score ?? 999),
+    bestDifferential: Number(g.best_differential ?? 99.9),
+    eaglesCount: Number(g.eagles_count ?? 0),
+    holesInOneCount: Number(g.holes_in_one_count ?? 0)
+  };
+}
+
+function mapRound(r: any, golferName = ''): GolfRound {
+  return {
+    id: r.id,
+    golferId: r.golfer_id,
+    golferName,
+    courseId: r.course_name,
+    courseName: r.course_name,
+    teeName: r.tee_name,
+    date: r.date,
+    score: r.score,
+    holesPlayed: r.holes_played as 9 | 18,
+    rating: Number(r.rating),
+    slope: Number(r.slope),
+    par: Number(r.par),
+    pcc: Number(r.pcc || 0),
+    differential: Number(r.differential),
+    notes: r.notes,
+    verifiedCount: r.verified_count ?? 1
+  };
+}
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<GolferProfile | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  
-  const [golfers, setGolfers] = useState<GolferProfile[]>(INITIAL_GOLFERS);
-  const [rounds, setRounds] = useState<GolfRound[]>(INITIAL_ROUNDS);
-  const [courses, setCourses] = useState<GolfCourse[]>(INITIAL_COURSES);
-  const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  // Initialize DB Data & Auth Listener
+  const [golfers, setGolfers] = useState<GolferProfile[]>([]);
+  const [rounds, setRounds] = useState<GolfRound[]>([]);
+  const [courses, setCourses] = useState<GolfCourse[]>([]);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+
+  // Initial data load
   useEffect(() => {
     async function initData() {
-      // 1. Seed courses if needed & load courses
-      const loadedCourses = await seedDefaultCoursesIfEmpty();
-      setCourses(loadedCourses);
+      setCourses(await loadCourses());
 
-      // 2. Fetch golfers & rounds if Supabase is configured
-      if (supabase && isSupabaseConfigured) {
-        try {
-          const { data: gData } = await supabase.from('golfers').select('*');
-          if (gData && gData.length > 0) {
-            const mappedGolfers: GolferProfile[] = gData.map(g => ({
-              id: g.id,
-              name: g.name,
-              email: g.email,
-              friendCode: g.friend_code,
-              avatar: g.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-              homeCourse: g.home_course || 'Pebble Beach Golf Links',
-              targetHandicap: 4.0,
-              friends: [],
-              joinedDate: g.created_at,
-              handicapIndex: Number(g.handicap_index || 54.0),
-              lowestHandicapIndex: Number(g.lowest_handicap_index || 54.0),
-              totalRounds: Number(g.total_rounds || 0),
-              bestGrossScore: Number(g.best_gross_score || 999),
-              bestDifferential: Number(g.best_differential || 99.9),
-              eaglesCount: Number(g.eagles_count || 0),
-              holesInOneCount: Number(g.holes_in_one_count || 0)
-            }));
-            setGolfers(mappedGolfers);
-          }
+      if (supabase) {
+        const { data: gData } = await supabase.from('golfers').select('*');
+        const nameById = new Map<string, string>();
+        if (gData) {
+          gData.forEach((g: any) => nameById.set(g.id, g.name));
+          setGolfers(gData.map(mapGolfer));
+        }
 
-          const { data: rData } = await supabase.from('rounds').select('*').order('date', { ascending: false });
-          if (rData && rData.length > 0) {
-            const mappedRounds: GolfRound[] = rData.map(r => ({
-              id: r.id,
-              golferId: r.golfer_id,
-              golferName: r.course_name, // fallback
-              courseId: r.course_name,
-              courseName: r.course_name,
-              teeName: r.tee_name,
-              date: r.date,
-              score: r.score,
-              holesPlayed: r.holes_played as 9 | 18,
-              rating: Number(r.rating),
-              slope: Number(r.slope),
-              par: Number(r.par),
-              pcc: Number(r.pcc || 0),
-              differential: Number(r.differential),
-              notes: r.notes
-            }));
-            setRounds(mappedRounds);
-          }
-        } catch (err) {
-          console.error('Error fetching Supabase data:', err);
+        const { data: rData } = await supabase.from('rounds').select('*').order('date', { ascending: false });
+        if (rData) setRounds(rData.map((r: any) => mapRound(r, nameById.get(r.golfer_id) || 'Unknown Golfer')));
+
+        const { data: aData } = await supabase.from('activity_feed').select('*').order('created_at', { ascending: false }).limit(30);
+        if (aData) {
+          setActivities(aData.map((a: any) => ({
+            id: a.id,
+            golferId: a.golfer_id,
+            golferName: nameById.get(a.golfer_id) || 'Unknown Golfer',
+            roundId: a.round_id,
+            type: a.type,
+            title: a.title,
+            subtitle: a.subtitle,
+            timestamp: a.created_at,
+            reactions: a.reactions || { fire: 0, golf: 0, applause: 0, trophy: 0 }
+          })));
         }
       }
+
+      setLoading(false);
     }
 
     initData();
@@ -105,7 +122,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Supabase Auth Session listener
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
@@ -118,8 +138,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (session?.user) {
         setIsAuthenticated(true);
         loadUserProfile(session.user.id, session.user.email);
-      } else if (!currentUser) {
+      } else {
         setIsAuthenticated(false);
+        setCurrentUser(null);
       }
     });
 
@@ -131,59 +152,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadUserProfile = async (userId: string, email?: string) => {
     if (!supabase) return;
     const { data } = await supabase.from('golfers').select('*').eq('user_id', userId).single();
-    if (data) {
-      setCurrentUser({
-        id: data.id,
-        name: data.name,
-        email: data.email || email,
-        friendCode: data.friend_code,
-        avatar: data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-        homeCourse: data.home_course || 'Pebble Beach Golf Links',
-        targetHandicap: 4.0,
-        friends: [],
-        joinedDate: data.created_at,
-        handicapIndex: Number(data.handicap_index || 54.0),
-        lowestHandicapIndex: Number(data.lowest_handicap_index || 54.0),
-        totalRounds: Number(data.total_rounds || 0),
-        bestGrossScore: Number(data.best_gross_score || 999),
-        bestDifferential: Number(data.best_differential || 99.9),
-        eaglesCount: Number(data.eagles_count || 0),
-        holesInOneCount: Number(data.holes_in_one_count || 0)
-      });
-    }
-  };
+    if (!data) return;
 
-  const loginAsGuest = () => {
-    setCurrentUser(INITIAL_GOLFERS[0]); // JT
-    setIsAuthenticated(true);
+    const { data: friendRows } = await supabase.from('friendships').select('friend_id').eq('golfer_id', data.id);
+    const friends = (friendRows || []).map((f: any) => f.friend_id);
+
+    setCurrentUser({ ...mapGolfer({ ...data, email: data.email || email }), friends });
   };
 
   const signUpUser = async (email: string, pass: string, name: string, homeCourse: string) => {
     if (!supabase) {
-      // Fallback guest creation
-      const friendCode = `CB-${Math.floor(1000 + Math.random() * 9000)}-${name.slice(0, 2).toUpperCase()}`;
-      const newG: GolferProfile = {
-        id: `g-${Date.now()}`,
-        name,
-        email,
-        friendCode,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-        homeCourse,
-        targetHandicap: 5.0,
-        friends: [],
-        joinedDate: new Date().toISOString(),
-        handicapIndex: 54.0,
-        lowestHandicapIndex: 54.0,
-        totalRounds: 0,
-        bestGrossScore: 999,
-        bestDifferential: 99.9,
-        eaglesCount: 0,
-        holesInOneCount: 0
-      };
-      setGolfers(prev => [newG, ...prev]);
-      setCurrentUser(newG);
-      setIsAuthenticated(true);
-      return { success: true, message: 'Account created successfully!' };
+      return { success: false, message: 'Cabby is not connected to a database yet. Add Supabase credentials to get started.' };
     }
 
     const { data: authData, error: authErr } = await supabase.auth.signUp({ email, password: pass });
@@ -207,29 +186,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .select()
       .single();
 
-    if (gErr) {
-      return { success: false, message: gErr.message };
+    if (gErr || !gData) {
+      return { success: false, message: gErr?.message || 'Failed to create golfer profile.' };
     }
 
-    const newGolfer: GolferProfile = {
-      id: gData.id,
-      name: gData.name,
-      email: gData.email,
-      friendCode: gData.friend_code,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-      homeCourse: gData.home_course,
-      targetHandicap: 5.0,
-      friends: [],
-      joinedDate: gData.created_at,
-      handicapIndex: 54.0,
-      lowestHandicapIndex: 54.0,
-      totalRounds: 0,
-      bestGrossScore: 999,
-      bestDifferential: 99.9,
-      eaglesCount: 0,
-      holesInOneCount: 0
-    };
-
+    const newGolfer = mapGolfer(gData);
     setGolfers(prev => [newGolfer, ...prev]);
     setCurrentUser(newGolfer);
     setIsAuthenticated(true);
@@ -238,8 +199,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const signInUser = async (email: string, pass: string) => {
     if (!supabase) {
-      loginAsGuest();
-      return { success: true, message: 'Signed in as demo guest.' };
+      return { success: false, message: 'Cabby is not connected to a database yet. Add Supabase credentials to get started.' };
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
@@ -262,8 +222,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const userRounds = currentUser ? rounds.filter(r => r.golferId === currentUser.id) : [];
 
-  const addRound = async (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName' | 'golferAvatar'>) => {
-    if (!currentUser) return;
+  const addRound = async (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName'>) => {
+    if (!currentUser || !supabase) return;
 
     const differential = calculateDifferential(
       roundData.score,
@@ -273,22 +233,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       roundData.holesPlayed
     );
 
-    const newRoundId = `round-${Date.now()}`;
-    const newRound: GolfRound = {
-      ...roundData,
-      id: newRoundId,
-      golferId: currentUser.id,
-      golferName: currentUser.name,
-      golferAvatar: currentUser.avatar,
-      differential,
-      verifiedCount: 1
-    };
-
-    const updatedRounds = [newRound, ...rounds];
-    setRounds(updatedRounds);
-
-    if (supabase) {
-      await supabase.from('rounds').insert({
+    const { data: inserted, error } = await supabase
+      .from('rounds')
+      .insert({
         golfer_id: currentUser.id,
         course_name: roundData.courseName,
         tee_name: roundData.teeName,
@@ -301,32 +248,63 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         pcc: roundData.pcc,
         differential,
         notes: roundData.notes
-      });
-    }
+      })
+      .select()
+      .single();
+
+    if (error || !inserted) return;
+
+    const newRound: GolfRound = { ...mapRound(inserted), golferName: currentUser.name };
+    setRounds(prev => [newRound, ...prev]);
+
+    const isPersonalBest = currentUser.bestGrossScore > roundData.score;
+
+    const updatedUser: GolferProfile = {
+      ...currentUser,
+      totalRounds: currentUser.totalRounds + 1,
+      bestGrossScore: Math.min(currentUser.bestGrossScore, roundData.score),
+      bestDifferential: Math.min(currentUser.bestDifferential, differential)
+    };
+    setCurrentUser(updatedUser);
+    setGolfers(prev => prev.map(g => (g.id === currentUser.id ? updatedUser : g)));
+
+    await supabase.from('golfers').update({
+      total_rounds: updatedUser.totalRounds,
+      best_gross_score: updatedUser.bestGrossScore,
+      best_differential: updatedUser.bestDifferential
+    }).eq('id', currentUser.id);
 
     confetti({
-      particleCount: 90,
-      spread: 80,
+      particleCount: 70,
+      spread: 70,
       origin: { y: 0.6 },
       colors: ['#00FF87', '#00E676', '#FFD700', '#FFFFFF']
     });
 
-    const isPersonalBest = currentUser.bestGrossScore > roundData.score;
-    const newActivity: ActivityItem = {
-      id: `act-${Date.now()}`,
-      golferId: currentUser.id,
-      golferName: currentUser.name,
-      golferAvatar: currentUser.avatar,
-      roundId: newRoundId,
+    const activityPayload = {
+      golfer_id: currentUser.id,
+      golfer_name: currentUser.name,
+      round_id: newRound.id,
       type: isPersonalBest ? 'personal_best' : 'round_logged',
-      title: isPersonalBest ? '🔥 New Personal Best Round!' : `Logged ${roundData.holesPlayed} Holes at ${roundData.courseName}`,
+      title: isPersonalBest ? 'New personal best round!' : `Logged ${roundData.holesPlayed} holes at ${roundData.courseName}`,
       subtitle: `Shot ${roundData.score} (${roundData.score > roundData.par ? '+' : ''}${roundData.score - roundData.par}) • Differential: ${differential}`,
-      timestamp: 'Just now',
-      reactions: { fire: 1, golf: 1, applause: 1, trophy: isPersonalBest ? 1 : 0 },
-      userReactions: ['fire']
+      reactions: { fire: 0, golf: 0, applause: 0, trophy: 0 }
     };
 
-    setActivities(prev => [newActivity, ...prev]);
+    const { data: insertedActivity } = await supabase.from('activity_feed').insert(activityPayload).select().single();
+    if (insertedActivity) {
+      setActivities(prev => [{
+        id: insertedActivity.id,
+        golferId: insertedActivity.golfer_id,
+        golferName: insertedActivity.golfer_name,
+        roundId: insertedActivity.round_id,
+        type: insertedActivity.type,
+        title: insertedActivity.title,
+        subtitle: insertedActivity.subtitle,
+        timestamp: insertedActivity.created_at,
+        reactions: insertedActivity.reactions
+      }, ...prev]);
+    }
   };
 
   const deleteRound = async (roundId: string) => {
@@ -343,17 +321,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (!found) return { success: false, message: 'Invalid friend code.' };
     if (found.id === currentUser.id) return { success: false, message: 'This is your own code!' };
+    if (currentUser.friends.includes(found.id)) return { success: false, message: `You're already connected with ${found.name}.` };
 
-    setGolfers(prev => prev.map(g => {
-      if (g.id === currentUser.id) return { ...g, friends: [...g.friends, found.id] };
-      return g;
-    }));
+    if (supabase) {
+      const { error } = await supabase.from('friendships').insert({ golfer_id: currentUser.id, friend_id: found.id });
+      if (error) return { success: false, message: 'Could not save this connection. Try again.' };
+    }
+
+    const updatedUser = { ...currentUser, friends: [...currentUser.friends, found.id] };
+    setCurrentUser(updatedUser);
+    setGolfers(prev => prev.map(g => (g.id === currentUser.id ? updatedUser : g)));
 
     return { success: true, message: `Connected with ${found.name}!` };
   };
 
-  const addCustomCourse = async (course: GolfCourse) => {
-    setCourses(prev => [course, ...prev]);
+  const addCustomCourse = async (course: Omit<GolfCourse, 'id'>) => {
+    const saved = await saveCourse(course);
+    if (saved) {
+      setCourses(prev => [saved, ...prev]);
+    }
+    return saved;
   };
 
   const reactToActivity = (activityId: string, reactionType: 'fire' | 'golf' | 'applause' | 'trophy') => {
@@ -371,6 +358,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } else {
           newReactions[reactionType] = (newReactions[reactionType] || 0) + 1;
           newUserReactions.push(reactionType);
+        }
+
+        if (supabase) {
+          supabase.from('activity_feed').update({ reactions: newReactions }).eq('id', activityId);
         }
 
         return { ...act, reactions: newReactions, userReactions: newUserReactions };
@@ -398,12 +389,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateProfile = async (updatedData: Partial<GolferProfile>) => {
     if (!currentUser) return;
-    setCurrentUser(prev => prev ? { ...prev, ...updatedData } : null);
+    const merged = { ...currentUser, ...updatedData };
+    setCurrentUser(merged);
+    setGolfers(prev => prev.map(g => (g.id === currentUser.id ? merged : g)));
     if (supabase) {
       await supabase.from('golfers').update({
         name: updatedData.name,
         home_course: updatedData.homeCourse,
-        bio: updatedData.bio
+        bio: updatedData.bio,
+        target_handicap: updatedData.targetHandicap
       }).eq('id', currentUser.id);
     }
   };
@@ -418,10 +412,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         courses,
         activities,
         userRounds,
+        loading,
         signUpUser,
         signInUser,
         signOutUser,
-        loginAsGuest,
         addRound,
         deleteRound,
         addFriendByCode,

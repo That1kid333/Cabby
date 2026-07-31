@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { GolfCourse, GolferProfile, GolfRound, ActivityItem } from '../types';
-import { INITIAL_COURSES } from './sampleData';
+import { GolfCourse } from '../types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
@@ -12,67 +11,78 @@ export const supabase = isSupabaseConfigured
   : null;
 
 /**
- * Auto-seeds default championship courses into Supabase if public.courses table is empty.
+ * Loads every course golfers have added so far. Starts empty — courses are only
+ * ever real ones a golfer searched for (via OpenGolfAPI) or entered from a scorecard.
  */
-export async function seedDefaultCoursesIfEmpty(): Promise<GolfCourse[]> {
-  if (!supabase) return INITIAL_COURSES;
+export async function loadCourses(): Promise<GolfCourse[]> {
+  if (!supabase) return [];
 
-  try {
-    const { data: existingCourses, error } = await supabase.from('courses').select('*, tees:tee_boxes(*)');
-    
-    if (error || !existingCourses || existingCourses.length === 0) {
-      console.log('Seeding initial golf courses into Supabase...');
+  const { data, error } = await supabase.from('courses').select('*, tees:tee_boxes(*)');
+  if (error || !data) return [];
 
-      for (const course of INITIAL_COURSES) {
-        const { data: insertedCourse, error: cErr } = await supabase
-          .from('courses')
-          .insert({
-            name: course.name,
-            location: course.location,
-            city: course.city,
-            state: course.state
-          })
-          .select()
-          .single();
+  return data.map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    location: c.location,
+    city: c.city,
+    state: c.state,
+    tees: (c.tees || []).map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      color: t.color,
+      rating: Number(t.rating),
+      slope: t.slope,
+      par: t.par,
+      yardage: t.yardage
+    }))
+  }));
+}
 
-        if (insertedCourse && !cErr) {
-          const teeInserts = course.tees.map(t => ({
-            course_id: insertedCourse.id,
-            name: t.name,
-            color: t.color,
-            rating: t.rating,
-            slope: t.slope,
-            par: t.par,
-            yardage: t.yardage
-          }));
-          await supabase.from('tee_boxes').insert(teeInserts);
-        }
-      }
+/**
+ * Saves a course (and its tees) to Supabase so every golfer benefits from it once added.
+ */
+export async function saveCourse(course: Omit<GolfCourse, 'id'>): Promise<GolfCourse | null> {
+  if (!supabase) return null;
 
-      // Re-query newly seeded courses
-      const { data: reQueried } = await supabase.from('courses').select('*, tees:tee_boxes(*)');
-      if (reQueried) {
-        return reQueried.map(c => ({
-          id: c.id,
-          name: c.name,
-          location: c.location,
-          city: c.city,
-          state: c.state,
-          tees: c.tees || []
-        }));
-      }
-    }
+  const { data: insertedCourse, error: cErr } = await supabase
+    .from('courses')
+    .insert({
+      name: course.name,
+      location: course.location,
+      city: course.city,
+      state: course.state
+    })
+    .select()
+    .single();
 
-    return (existingCourses || []).map(c => ({
-      id: c.id,
-      name: c.name,
-      location: c.location,
-      city: c.city,
-      state: c.state,
-      tees: c.tees || []
-    }));
-  } catch (err) {
-    console.error('Error seeding courses:', err);
-    return INITIAL_COURSES;
-  }
+  if (cErr || !insertedCourse) return null;
+
+  const teeInserts = course.tees.map(t => ({
+    course_id: insertedCourse.id,
+    name: t.name,
+    color: t.color || '#2563EB',
+    rating: t.rating,
+    slope: t.slope,
+    par: t.par,
+    yardage: t.yardage
+  }));
+
+  const { data: insertedTees } = await supabase.from('tee_boxes').insert(teeInserts).select();
+
+  return {
+    id: insertedCourse.id,
+    name: insertedCourse.name,
+    location: insertedCourse.location,
+    city: insertedCourse.city,
+    state: insertedCourse.state,
+    tees: (insertedTees || []).map((t: any) => ({
+      id: t.id,
+      name: t.name,
+      color: t.color,
+      rating: Number(t.rating),
+      slope: t.slope,
+      par: t.par,
+      yardage: t.yardage
+    }))
+  };
 }

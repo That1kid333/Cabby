@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS public.golfers (
   avatar TEXT,
   home_course TEXT,
   bio TEXT,
+  target_handicap NUMERIC(4, 1),
   handicap_index NUMERIC(4, 1) DEFAULT 54.0,
   lowest_handicap_index NUMERIC(4, 1) DEFAULT 54.0,
   total_rounds INTEGER DEFAULT 0,
@@ -73,6 +74,7 @@ CREATE TABLE IF NOT EXISTS public.rounds (
   differential NUMERIC(4, 1) NOT NULL,
   notes TEXT,
   hole_details JSONB,
+  verified_count INTEGER DEFAULT 1,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -98,3 +100,10 @@ CREATE POLICY "Public rounds read access" ON public.rounds FOR SELECT USING (tru
 CREATE POLICY "Public activity read access" ON public.activity_feed FOR SELECT USING (true);
 
 CREATE POLICY "Users can insert their own rounds" ON public.rounds FOR INSERT WITH CHECK (true);
+CREATE POLICY "Users can insert activity" ON public.activity_feed FOR INSERT WITH CHECK (true);
+CREATE POLICY "Users can update activity reactions" ON public.activity_feed FOR UPDATE USING (true);
+CREATE POLICY "Users can update their own golfer row" ON public.golfers FOR UPDATE USING (true);
+
+-- Safe to re-run against an already-deployed database that predates these columns.
+ALTER TABLE public.golfers ADD COLUMN IF NOT EXISTS target_handicap NUMERIC(4, 1);
+ALTER TABLE public.rounds ADD COLUMN IF NOT EXISTS verified_count INTEGER DEFAULT 1;

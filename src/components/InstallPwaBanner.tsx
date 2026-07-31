@@ -27,7 +27,7 @@ export const InstallPwaBanner: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-20 sm:bottom-6 left-4 right-4 max-w-md mx-auto z-50 glass-panel p-4 rounded-2xl border-[#00FF87]/40 bg-gradient-to-r from-[#0C1A2E] to-[#070D18] shadow-2xl flex items-center justify-between gap-3 animate-bounce">
+    <div className="fixed bottom-20 sm:bottom-6 left-4 right-4 max-w-md mx-auto z-50 glass-panel p-4 rounded-2xl border-[#00FF87]/40 bg-gradient-to-r from-[#0C1A2E] to-[#070D18] shadow-2xl flex items-center justify-between gap-3">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-[#05C46B]/20 text-[#00FF87] flex items-center justify-center font-bold">
           <Smartphone size={20} />

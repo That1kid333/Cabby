@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Trophy, Crown, Flame, Award, Users, UserPlus, Sparkles, Check } from 'lucide-react';
+import { Trophy, Crown, Flame, Award, UserPlus, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatHandicapIndex } from '../lib/whsEngine';
+import { Avatar } from './Avatar';
 
 interface LeaderboardsProps {
   onOpenQrShare: () => void;
@@ -39,7 +40,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpe
               The Buddy Leaderboard
             </h1>
             <p className="text-xs text-slate-300">
-              Compete live with JT and the crew across Handicap Index, Gross Rounds, and Eagles!
+              Compete live with your golf buddies across Handicap Index, Gross Rounds, and Eagles!
             </p>
           </div>
 
@@ -109,6 +110,20 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpe
 
       {/* Leaderboard Table List */}
       <div className="glass-panel p-4 sm:p-6 rounded-3xl space-y-3">
+        {sortedGolfers.length <= 1 && (
+          <div className="text-center py-6 space-y-2">
+            <p className="text-sm text-slate-300">
+              {sortedGolfers.length === 0 ? "It's quiet in here." : "You're the only golfer here so far."}
+            </p>
+            <button
+              onClick={onOpenQrShare}
+              className="text-xs text-[#00FF87] hover:underline font-bold"
+            >
+              Share your friend code to start a real leaderboard →
+            </button>
+          </div>
+        )}
+
         {sortedGolfers.map((golfer, index) => {
           const rank = index + 1;
           const isCurrentUser = currentUser ? golfer.id === currentUser.id : false;
@@ -151,11 +166,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpe
               {/* Rank & Profile */}
               <div className="flex items-center gap-3">
                 {rankBadge}
-                <img
-                  src={golfer.avatar}
-                  alt={golfer.name}
-                  className="w-12 h-12 rounded-2xl object-cover ring-2 ring-[#05C46B]"
-                />
+                <Avatar name={golfer.name} size={48} />
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-white text-base font-['Outfit']">

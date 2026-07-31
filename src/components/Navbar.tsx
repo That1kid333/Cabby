@@ -1,7 +1,8 @@
 import React from 'react';
-import { QrCode, PlusCircle, Trophy, Calculator, TrendingUp, MapPin, LogOut, User } from 'lucide-react';
+import { QrCode, PlusCircle, Trophy, Calculator, TrendingUp, MapPin } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatHandicapIndex } from '../lib/whsEngine';
+import { Avatar } from './Avatar';
 
 interface NavbarProps {
   activeTab: string;
@@ -130,11 +131,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={onOpenProfile}
                 className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl p-1.5 sm:pr-3 transition-all"
               >
-                <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
-                  className="w-8 h-8 rounded-lg object-cover ring-2 ring-[#00FF87]"
-                />
+                <Avatar name={currentUser.name} size={32} />
                 <div className="text-left hidden lg:block">
                   <p className="text-xs font-extrabold text-white leading-tight">{currentUser.name}</p>
                   <p className="text-[10px] text-[#00FF87] font-bold">

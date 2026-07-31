@@ -51,12 +51,7 @@ const AppContent: React.FC = () => {
         <main className="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-8">
           
           {!isAuthenticated ? (
-            <LandingPage
-              onOpenAuth={handleOpenAuth}
-              onTryDemo={() => {
-                setActiveTab('dashboard');
-              }}
-            />
+            <LandingPage onOpenAuth={handleOpenAuth} />
           ) : (
             <>
               {activeTab === 'dashboard' && (
@@ -113,7 +108,7 @@ const AppContent: React.FC = () => {
             <span>PWA Enabled</span>
             <span>•</span>
             <span className="text-[#00FF87] font-semibold">
-              Made for JT & Golf Buddies
+              Made for golfers & their buddies
             </span>
           </div>
         </div>

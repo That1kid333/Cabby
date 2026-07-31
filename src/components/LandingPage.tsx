@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Trophy, QrCode, Zap, ArrowRight, CheckCircle2, Calculator, Play, Star, Users, Flag, Sparkles } from 'lucide-react';
+import { Trophy, QrCode, Zap, ArrowRight, Calculator, Sparkles } from 'lucide-react';
 import { calculateCourseHandicap, formatHandicapIndex } from '../lib/whsEngine';
 
 interface LandingPageProps {
   onOpenAuth: (mode: 'login' | 'signup') => void;
-  onTryDemo: () => void;
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onTryDemo }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   // Quick WHS Demo Calculator state on Landing Page
   const [demoIndex, setDemoIndex] = useState<number>(7.4);
   const [demoSlope, setDemoSlope] = useState<number>(136);
@@ -21,25 +20,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onTryDemo 
       
       {/* Hero Section */}
       <section className="relative pt-12 pb-16 overflow-hidden">
-        
+
         {/* Glow Spheres */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#00FF87]/15 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute top-1/3 right-10 w-[400px] h-[400px] bg-[#FFD700]/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#00FF87]/10 rounded-full blur-[130px] pointer-events-none" />
+        <div className="absolute top-1/3 right-10 w-[350px] h-[350px] bg-[#FFD700]/8 rounded-full blur-[110px] pointer-events-none" />
 
         <div className="max-w-6xl mx-auto px-4 text-center space-y-8 relative z-10">
-          
+
           {/* Top Pill Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00FF87]/15 border border-[#00FF87]/40 text-[#00FF87] text-xs font-bold shadow-lg shadow-[#00FF87]/10 animate-bounce">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00FF87]/15 border border-[#00FF87]/40 text-[#00FF87] text-xs font-bold">
             <Sparkles size={14} /> WHS 2024 COMPLIANT GOLF CLUBHOUSE APP
           </div>
 
           {/* Main Hero Headline */}
-          <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight font-['Outfit'] leading-[1.05]">
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight font-['Outfit'] leading-[1.1]">
             Track Your Handicap <br />
             <span className="text-gradient-emerald">Like A PGA Pro.</span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
+          <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto font-normal leading-relaxed">
             Forget ugly spreadsheets & clunky paid apps. <strong className="text-white">Cabby</strong> delivers accurate WHS calculations, course handicap converters, and live buddy high-score leaderboards.
           </p>
 
@@ -58,25 +57,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onTryDemo 
             >
               Member Sign In
             </button>
-
-            <button
-              onClick={onTryDemo}
-              className="px-6 py-4 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold border border-white/10 text-sm transition-all flex items-center gap-2"
-            >
-              <Play size={16} className="text-[#00FF87]" /> Explore Interactive App Demo
-            </button>
           </div>
 
-          {/* App Screenshot / Hero Preview Card */}
+          {/* Example Preview Card */}
           <div className="pt-8 max-w-4xl mx-auto">
             <div className="glass-card p-4 sm:p-6 rounded-3xl border-[#00FF87]/30 shadow-2xl relative group">
               <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-[#00FF87]/10 to-[#FFD700]/10 pointer-events-none opacity-50" />
-              
+
               <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6 p-6 rounded-2xl bg-[#040711]/90 border border-white/10 text-left">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-[#00FF87] animate-ping" />
-                    <span className="text-xs font-bold text-[#00FF87]">LIVE WHS HANDICAP ENGINE</span>
+                    <span className="w-2 h-2 rounded-full bg-[#00FF87]" />
+                    <span className="text-xs font-bold text-[#00FF87]">EXAMPLE HANDICAP INDEX</span>
                   </div>
                   <h3 className="text-4xl font-extrabold text-white font-['Outfit']">7.2 Index</h3>
                   <p className="text-xs text-slate-400">Average of best 8 differentials from last 20 rounds</p>
@@ -93,7 +85,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onTryDemo 
                   </div>
                   <div className="p-3 rounded-2xl bg-[#FFD700]/15 border border-[#FFD700]/30 text-center min-w-[100px]">
                     <p className="text-[10px] text-[#FFD700] font-semibold">Club Rank</p>
-                    <p className="text-xl font-bold text-[#FFD700]">#1 🥇</p>
+                    <p className="text-xl font-bold text-[#FFD700]">#1</p>
                   </div>
                 </div>
               </div>
@@ -215,7 +207,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth, onTryDemo 
             </div>
             <h3 className="text-xl font-bold text-white font-['Outfit']">QR Code Friend Cards</h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Share your custom QR Code or referral code (`CB-8821-JT`) with buddies on the first tee box to sync scores instantly.
+              Share your custom QR code or referral code with buddies on the first tee box to sync scores instantly.
             </p>
           </div>
 

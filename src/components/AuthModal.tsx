@@ -1,5 +1,8 @@
+
+
+
 import React, { useState } from 'react';
-import { X, Mail, Lock, User, Flag, ArrowRight, ShieldCheck, Play } from 'lucide-react';
+import { X, Mail, Lock, User, Flag } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface AuthModalProps {
@@ -15,13 +18,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const { signUpUser, signInUser, loginAsGuest } = useApp();
+  const { signUpUser, signInUser } = useApp();
 
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [homeCourse, setHomeCourse] = useState('Pebble Beach Golf Links');
+  const [homeCourse, setHomeCourse] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -64,16 +67,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleGuestAccess = () => {
-    loginAsGuest();
-    onSuccess();
-    onClose();
-  };
-
   return (
     <div className="modal-overlay">
       <div className="glass-card w-full max-w-md p-6 sm:p-8 rounded-3xl border-white/15 relative space-y-6">
-        
+
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -100,22 +97,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             type="button"
             onClick={() => { setMode('signup'); setErrorMsg(null); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
-              mode === 'signup'
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${mode === 'signup'
                 ? 'bg-gradient-to-r from-[#00FF87] to-[#00E676] text-[#040711] shadow-md'
                 : 'text-slate-400 hover:text-white'
-            }`}
+              }`}
           >
             Create Account
           </button>
           <button
             type="button"
             onClick={() => { setMode('login'); setErrorMsg(null); }}
-            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
-              mode === 'login'
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${mode === 'login'
                 ? 'bg-gradient-to-r from-[#00FF87] to-[#00E676] text-[#040711] shadow-md'
                 : 'text-slate-400 hover:text-white'
-            }`}
+              }`}
           >
             Sign In
           </button>
@@ -123,7 +118,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Form Inputs */}
         <form onSubmit={handleSubmit} className="space-y-4 text-left">
-          
+
           {mode === 'signup' && (
             <>
               <div className="space-y-1">
@@ -133,7 +128,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. JT 'Bomb & Gouge'"
+                    placeholder="e.g. Alex Rivera"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full bg-[#0A0F1D] border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00FF87]"
@@ -201,17 +196,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {loading ? 'Processing...' : mode === 'signup' ? 'Create Free Golfer Profile' : 'Sign In To Clubhouse'}
           </button>
         </form>
-
-        {/* Guest Demo Fallback Button */}
-        <div className="border-t border-white/10 pt-4 space-y-2 text-center">
-          <p className="text-[11px] text-slate-400">Want to test the app without registering?</p>
-          <button
-            onClick={handleGuestAccess}
-            className="w-full bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-2 rounded-xl border border-white/10 text-xs flex items-center justify-center gap-1.5"
-          >
-            <Play size={14} className="text-[#00FF87]" /> Continue as Demo Guest Golfer (JT)
-          </button>
-        </div>
 
       </div>
     </div>
