@@ -18,6 +18,8 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
   const [pendingTees, setPendingTees] = useState<{ result: ExternalCourseResult; tees: ExternalTee[] } | null>(null);
   const [showManualForm, setShowManualForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingTee, setConfirmingTee] = useState<number | null>(null);
+  const [savingManual, setSavingManual] = useState(false);
 
   const [manualName, setManualName] = useState('');
   const [manualLocation, setManualLocation] = useState('');
@@ -78,9 +80,12 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
     }
   };
 
-  const handleConfirmTee = async (tee: ExternalTee) => {
-    if (!pendingTees) return;
+  const handleConfirmTee = async (tee: ExternalTee, index: number) => {
+    if (!pendingTees || confirmingTee !== null) return;
     const { result } = pendingTees;
+
+    setConfirmingTee(index);
+    setError(null);
 
     const saved = await addCustomCourse({
       name: result.name,
@@ -90,16 +95,22 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
       tees: [{ id: '', name: tee.name, color: '#2563EB', rating: tee.rating, slope: tee.slope, par: tee.par, yardage: tee.yardage }]
     });
 
+    setConfirmingTee(null);
+
     if (saved) {
       onSelect(saved);
+      setPendingTees(null);
     } else {
-      setError('Could not save this course. Check your connection and try again.');
+      setError('Could not save this course. Check your connection and try again — the database may need the latest schema.sql applied.');
     }
   };
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!manualName.trim()) return;
+    if (!manualName.trim() || savingManual) return;
+
+    setSavingManual(true);
+    setError(null);
 
     const saved = await addCustomCourse({
       name: manualName,
@@ -107,11 +118,13 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
       tees: [{ id: '', name: manualTeeName, color: '#2563EB', rating: Number(manualRating), slope: Number(manualSlope), par: Number(manualPar) }]
     });
 
+    setSavingManual(false);
+
     if (saved) {
       onSelect(saved);
       setShowManualForm(false);
     } else {
-      setError('Could not save this course. Check your connection and try again.');
+      setError('Could not save this course. Check your connection and try again — the database may need the latest schema.sql applied.');
     }
   };
 
@@ -123,8 +136,8 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
             <h3 className="text-sm font-bold text-white">{pendingTees.result.name}</h3>
             <p className="text-[11px] text-slate-400">{[pendingTees.result.city, pendingTees.result.state].filter(Boolean).join(', ')}</p>
           </div>
-          <button type="button" onClick={() => setPendingTees(null)} className="text-[11px] text-slate-400 hover:text-white">
-            Cancel
+          <button type="button" onClick={() => { setPendingTees(null); setError(null); }} className="text-[11px] text-slate-400 hover:text-white">
+            Back
           </button>
         </div>
         <p className="text-[11px] text-slate-400 uppercase tracking-wider font-bold">Pick the tee you played</p>
@@ -133,14 +146,19 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
             <button
               key={i}
               type="button"
-              onClick={() => handleConfirmTee(tee)}
-              className="p-2.5 rounded-xl border border-white/10 bg-white/5 hover:border-[#00FF87]/50 text-left transition-all"
+              disabled={confirmingTee !== null}
+              onClick={() => handleConfirmTee(tee, i)}
+              className="p-2.5 rounded-xl border border-white/10 bg-white/5 hover:border-[#00FF87]/50 text-left transition-all disabled:opacity-50 flex items-center justify-between gap-2"
             >
-              <p className="text-xs font-bold text-white">{tee.name}</p>
-              <p className="text-[10px] text-slate-400">R: {tee.rating} / S: {tee.slope}</p>
+              <div>
+                <p className="text-xs font-bold text-white">{tee.name}</p>
+                <p className="text-[10px] text-slate-400">R: {tee.rating} / S: {tee.slope}</p>
+              </div>
+              {confirmingTee === i && <Loader2 size={14} className="animate-spin text-[#00FF87] shrink-0" />}
             </button>
           ))}
         </div>
+        {error && <p className="text-xs font-bold text-red-400 bg-red-500/10 p-2.5 rounded-xl border border-red-500/20">{error}</p>}
       </div>
     );
   }
@@ -224,8 +242,14 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
               <input type="number" placeholder="Par" value={manualPar} onChange={(e) => setManualPar(Number(e.target.value))} className="form-input form-input-sm" />
             </div>
           </div>
-          <button type="button" onClick={handleManualSubmit} className="w-full bg-[#05C46B] text-[#070B16] font-bold py-2 rounded-xl text-xs hover:bg-[#00FF87]">
-            Save & Select Course
+          <button
+            type="button"
+            onClick={handleManualSubmit}
+            disabled={savingManual}
+            className="w-full bg-[#05C46B] text-[#070B16] font-bold py-2 rounded-xl text-xs hover:bg-[#00FF87] disabled:opacity-50 flex items-center justify-center gap-1.5"
+          >
+            {savingManual && <Loader2 size={14} className="animate-spin" />}
+            {savingManual ? 'Saving…' : 'Save & Select Course'}
           </button>
         </div>
       )}

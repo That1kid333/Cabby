@@ -132,6 +132,15 @@ CREATE TABLE IF NOT EXISTS public.game_scores (
 ALTER TABLE public.golfers ADD COLUMN IF NOT EXISTS games_won INTEGER DEFAULT 0;
 
 -- RLS (Row Level Security) Setup
+--
+-- courses/tee_boxes were previously left with RLS untouched (off by default).
+-- That's fragile: Supabase's dashboard nags project owners to "Enable RLS" on
+-- every public table, and if that gets clicked with no policies defined, every
+-- insert/select silently fails with zero error visible anywhere in the app UI
+-- until now. Explicitly enabling it here WITH matching permissive policies means
+-- it behaves the same whether or not someone clicked that button in the dashboard.
+ALTER TABLE public.courses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tee_boxes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.golfers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rounds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_feed ENABLE ROW LEVEL SECURITY;
@@ -141,6 +150,18 @@ ALTER TABLE public.game_scores ENABLE ROW LEVEL SECURITY;
 
 -- Policies are dropped-and-recreated so this whole file is safe to re-run
 -- against a database that already has an earlier version of these policies.
+DROP POLICY IF EXISTS "Public courses read access" ON public.courses;
+CREATE POLICY "Public courses read access" ON public.courses FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can add courses" ON public.courses;
+CREATE POLICY "Users can add courses" ON public.courses FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Users can remove a course they broke while adding tees" ON public.courses;
+CREATE POLICY "Users can remove a course they broke while adding tees" ON public.courses FOR DELETE USING (true);
+
+DROP POLICY IF EXISTS "Public tee_boxes read access" ON public.tee_boxes;
+CREATE POLICY "Public tee_boxes read access" ON public.tee_boxes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can add tee boxes" ON public.tee_boxes;
+CREATE POLICY "Users can add tee boxes" ON public.tee_boxes FOR INSERT WITH CHECK (true);
+
 DROP POLICY IF EXISTS "Public golfers read access" ON public.golfers;
 CREATE POLICY "Public golfers read access" ON public.golfers FOR SELECT USING (true);
 
