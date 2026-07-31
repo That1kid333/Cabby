@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { GolfCourse, GolferProfile, GolfRound, ActivityItem } from '../types';
-import { supabase, loadCourses, saveCourse } from '../lib/supabase';
+import { supabase, loadCourses, saveCourse, upsertCourseHolePar } from '../lib/supabase';
 import { calculateDifferential } from '../lib/whsEngine';
 import { GameDeletionRollback } from '../lib/games';
 
@@ -31,6 +31,7 @@ interface AppContextType {
   bumpGamesWon: (golferId: string) => void;
   applyGameResults: (results: { round: GolfRound; updatedGolfer: Partial<GolferProfile> & { id: string } }[]) => void;
   applyGameDeletionRollback: (rollback: GameDeletionRollback) => void;
+  updateCourseHolePar: (courseId: string, holeNumber: number, par: number) => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -475,6 +476,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const updateCourseHolePar = async (courseId: string, holeNumber: number, par: number): Promise<boolean> => {
+    const updatedHoles = await upsertCourseHolePar(courseId, holeNumber, par);
+    if (!updatedHoles) return false;
+    setCourses(prev => prev.map(c => (c.id === courseId ? { ...c, holes: updatedHoles } : c)));
+    return true;
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -499,7 +507,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         postActivity,
         bumpGamesWon,
         applyGameResults,
-        applyGameDeletionRollback
+        applyGameDeletionRollback,
+        updateCourseHolePar
       }}
     >
       {children}

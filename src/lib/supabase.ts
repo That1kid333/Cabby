@@ -117,3 +117,26 @@ export async function saveCourse(course: Omit<GolfCourse, 'id'>): Promise<GolfCo
     holes: savedHoles
   };
 }
+
+/**
+ * Sets (or corrects) a hole's par for a course, shared with every golfer —
+ * not per-browser local state. This matters because +/- par scoring computes
+ * real strokes from this number; if it only lived in one player's browser,
+ * different players in the same game could end up saving different actual
+ * stroke counts for typing the same "-1". Returns the course's full, updated
+ * hole list on success.
+ */
+export async function upsertCourseHolePar(courseId: string, holeNumber: number, par: number): Promise<HoleInfo[] | null> {
+  if (!supabase) return null;
+
+  const { error } = await supabase
+    .from('course_holes')
+    .upsert({ course_id: courseId, hole_number: holeNumber, par }, { onConflict: 'course_id,hole_number' });
+
+  if (error) return null;
+
+  const { data } = await supabase.from('course_holes').select('*').eq('course_id', courseId);
+  if (!data) return null;
+
+  return data.map((h: any) => ({ number: h.hole_number, par: h.par })).sort((a, b) => a.number - b.number);
+}

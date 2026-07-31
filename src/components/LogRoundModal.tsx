@@ -12,7 +12,7 @@ interface LogRoundModalProps {
 }
 
 export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose }) => {
-  const { addRound } = useApp();
+  const { addRound, updateCourseHolePar } = useApp();
 
   const [mode, setMode] = useState<'quick' | 'scorecard'>('quick');
   const [currentCourse, setCurrentCourse] = useState<GolfCourse | null>(null);
@@ -25,6 +25,8 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
 
   // 18-hole scorecard state — string inputs (parsed to strokes) so +/- par shorthand works
   const [holeInputs, setHoleInputs] = useState<string[]>(Array(18).fill('4'));
+  const [editingPar, setEditingPar] = useState<number | null>(null);
+  const [parDraft, setParDraft] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,10 +37,34 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
   const slope = currentTee?.slope || 113;
   const par = currentTee?.par || 72;
 
-  const holePar = (holeIndex: number) => currentCourse?.holes?.find(h => h.number === holeIndex + 1)?.par;
+  // Every hole always has a usable par — real data when known, a plain default
+  // of 4 otherwise — so +/- shorthand always resolves to a real stroke count
+  // instead of silently dropping to 0 for holes we don't have data for.
+  const realHolePar = (holeIndex: number) => currentCourse?.holes?.find(h => h.number === holeIndex + 1)?.par;
+  const holePar = (holeIndex: number) => realHolePar(holeIndex) ?? 4;
 
-  // Calculate live total score if in scorecard mode
-  const holeStrokes = holeInputs.map((val, i) => parseHoleScore(val, holePar(i)) ?? 0);
+  const startEditPar = (holeIndex: number) => {
+    setEditingPar(holeIndex);
+    setParDraft(String(holePar(holeIndex)));
+  };
+
+  const commitParEdit = async () => {
+    if (editingPar === null) return;
+    const holeIndex = editingPar;
+    const n = Number(parDraft);
+    setEditingPar(null);
+    if (!currentCourse || !Number.isFinite(n) || n < 3 || n > 6) return;
+    if (n === holePar(holeIndex)) return;
+    const ok = await updateCourseHolePar(currentCourse.id, holeIndex + 1, n);
+    if (!ok) setError(`Could not save the par correction for hole ${holeIndex + 1}. Try again.`);
+    else setCurrentCourse(prev => (prev ? { ...prev, holes: [...(prev.holes || []).filter(h => h.number !== holeIndex + 1), { number: holeIndex + 1, par: n }] } : prev));
+  };
+
+  // Calculate live total score if in scorecard mode — every hole is validated
+  // (not silently treated as 0 strokes) since that would quietly wreck the total.
+  const holeParseResults = holeInputs.map((val, i) => parseHoleScore(val, holePar(i)));
+  const invalidHoles = holeParseResults.map((v, i) => (v === null ? i + 1 : null)).filter((h): h is number => h !== null);
+  const holeStrokes = holeParseResults.map(v => v ?? 0);
   const calculatedScore = mode === 'scorecard'
     ? holeStrokes.reduce((a, b) => a + b, 0)
     : score;
@@ -50,14 +76,16 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
   const handleCourseSelected = (course: GolfCourse) => {
     setCurrentCourse(course);
     setCurrentTee(course.tees[0] || null);
-    if (course.holes) {
-      setHoleInputs(Array.from({ length: 18 }, (_, i) => String(course.holes!.find(h => h.number === i + 1)?.par ?? 4)));
-    }
+    setHoleInputs(Array.from({ length: 18 }, (_, i) => String(course.holes?.find(h => h.number === i + 1)?.par ?? 4)));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentCourse || !currentTee || submitting) return;
+    if (mode === 'scorecard' && invalidHoles.length > 0) {
+      setError(`Fix hole${invalidHoles.length === 1 ? '' : 's'} ${invalidHoles.join(', ')} — enter a valid score for each before posting.`);
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -242,26 +270,48 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
                 18-Hole Score Entry (Total: {calculatedScore})
               </h3>
               <p className="text-[10px] text-slate-400">
-                {currentCourse?.holes ? 'Enter total strokes, or shorthand relative to par: -1 birdie, E even, +2 double bogey.' : 'Enter your total strokes for each hole.'}
+                Enter total strokes taken, or shorthand relative to par: -1 birdie, E even, +2 double bogey. Tap a hole's par if it's wrong — it corrects it for every golfer at this course.
               </p>
               <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
-                {holeInputs.map((hInput, i) => (
-                  <div key={i} className="text-center bg-white/5 p-2 rounded-xl border border-white/10">
-                    <p className="text-[10px] text-slate-400 font-bold">#{i + 1}</p>
-                    {holePar(i) && <p className="text-[9px] text-slate-500">Par {holePar(i)}</p>}
-                    <input
-                      type="text"
-                      inputMode="text"
-                      value={hInput}
-                      onChange={(e) => {
-                        const newArr = [...holeInputs];
-                        newArr[i] = e.target.value;
-                        setHoleInputs(newArr);
-                      }}
-                      className="w-full bg-transparent text-center text-white font-bold text-sm focus:outline-none"
-                    />
-                  </div>
-                ))}
+                {holeInputs.map((hInput, i) => {
+                  const invalid = invalidHoles.includes(i + 1);
+                  return (
+                    <div key={i} className={`text-center bg-white/5 p-2 rounded-xl border ${invalid ? 'border-red-500/50' : 'border-white/10'}`}>
+                      <p className="text-[10px] text-slate-400 font-bold">#{i + 1}</p>
+                      {editingPar === i ? (
+                        <input
+                          type="number"
+                          autoFocus
+                          value={parDraft}
+                          onChange={(e) => setParDraft(e.target.value)}
+                          onBlur={commitParEdit}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+                          className="w-full bg-transparent text-center text-[9px] text-[#00FF87] focus:outline-none"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => startEditPar(i)}
+                          className={`text-[9px] underline decoration-dotted ${realHolePar(i) ? 'text-slate-500 hover:text-[#00FF87]' : 'text-amber-500/80 hover:text-amber-400'}`}
+                          title={realHolePar(i) ? "Tap to correct this hole's par" : 'Par not on file for this course — assumed 4, tap to set the real number'}
+                        >
+                          Par {holePar(i)}
+                        </button>
+                      )}
+                      <input
+                        type="text"
+                        inputMode="text"
+                        value={hInput}
+                        onChange={(e) => {
+                          const newArr = [...holeInputs];
+                          newArr[i] = e.target.value;
+                          setHoleInputs(newArr);
+                        }}
+                        className="w-full bg-transparent text-center text-white font-bold text-sm focus:outline-none"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -304,7 +354,7 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
 
           <button
             type="submit"
-            disabled={!currentCourse || !currentTee || submitting}
+            disabled={!currentCourse || !currentTee || submitting || (mode === 'scorecard' && invalidHoles.length > 0)}
             className="w-full bg-gradient-to-r from-[#05C46B] to-[#00FF87] hover:opacity-95 text-[#070B16] font-black py-3.5 rounded-xl text-base shadow-lg shadow-[#05C46B]/30 transition-all font-['Outfit'] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitting ? 'Posting…' : 'Post Round & Recalculate WHS Index →'}

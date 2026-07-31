@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { Avatar } from './Avatar';
 import { Game, TeeBox } from '../types';
 import { fetchGame, subscribeToGame, setGameStatus, postHoleScore, joinGame, completeGame, deleteGame, playerProgress, postGameResultsAsRounds } from '../lib/games';
-import { parseHoleScore } from '../lib/holeScoring';
+import { parseHoleScore, relativeToParLabel } from '../lib/holeScoring';
 import { ShareGameModal } from './ShareGameModal';
 import { BettingPanel } from './BettingPanel';
 
@@ -17,9 +17,11 @@ interface GameCardViewProps {
 }
 
 export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, onBack, onGameUpdated, onDeleted }) => {
-  const { currentUser, courses, golfers, rounds, postActivity, bumpGamesWon, applyGameResults, applyGameDeletionRollback } = useApp();
+  const { currentUser, courses, golfers, rounds, postActivity, bumpGamesWon, applyGameResults, applyGameDeletionRollback, updateCourseHolePar } = useApp();
   const [game, setGame] = useState<Game>(initialGame);
   const [myScores, setMyScores] = useState<Record<number, string>>({});
+  const [editingPar, setEditingPar] = useState<number | null>(null);
+  const [parDraft, setParDraft] = useState('');
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
@@ -93,13 +95,35 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
     await refresh();
   };
 
-  const holePar = (hole: number) => matchingCourse?.holes?.find(h => h.number === hole)?.par;
+  // Every hole always has a usable par — real data when the course has it, a
+  // plain default of 4 otherwise — so +/- shorthand always works, not just for
+  // courses OpenGolfAPI happens to have hole-level data for.
+  const realHolePar = (hole: number) => matchingCourse?.holes?.find(h => h.number === hole)?.par;
+  const holePar = (hole: number) => realHolePar(hole) ?? 4;
+
+  const startEditPar = (hole: number) => {
+    setEditingPar(hole);
+    setParDraft(String(holePar(hole)));
+  };
+
+  const commitParEdit = async () => {
+    if (editingPar === null) return;
+    const hole = editingPar;
+    const n = Number(parDraft);
+    setEditingPar(null);
+    if (!matchingCourse || !Number.isFinite(n) || n < 3 || n > 6) return;
+    if (n === holePar(hole)) return;
+    // Shared correction — saved to the course itself so every player (and every
+    // future game at this course) sees the same, right par, not just this browser.
+    const ok = await updateCourseHolePar(matchingCourse.id, hole, n);
+    if (!ok) setActionError(`Could not save the par correction for hole ${hole}. Try again.`);
+  };
 
   const commitHole = async (hole: number, value: string) => {
     const strokes = parseHoleScore(value, holePar(hole));
     if (strokes === null) {
       if (value.trim()) {
-        setActionError(`Hole ${hole}: enter a valid score${holePar(hole) ? ' (e.g. -1, E, +2, or a total strokes count)' : ' (total strokes taken)'}.`);
+        setActionError(`Hole ${hole}: enter a valid score (e.g. -1, E, +2, or a total strokes count). If the par shown is wrong, tap it to fix it.`);
       }
       return;
     }
@@ -295,7 +319,14 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xl font-black text-white font-['Outfit']">{s.holesCompleted > 0 ? s.total : '--'}</p>
+              <div className="flex items-baseline justify-end gap-1.5">
+                <p className="text-xl font-black text-white font-['Outfit']">{s.holesCompleted > 0 ? s.total : '--'}</p>
+                {s.holesCompleted > 0 && (
+                  <span className="text-xs font-bold text-[#00FF87]">
+                    ({relativeToParLabel(s.total, Array.from({ length: s.holesCompleted }, (_, i) => holePar(i + 1)).reduce((a, b) => a + b, 0))})
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-slate-400">{s.holesCompleted === game.holesPlayed ? 'Finished' : s.holesCompleted > 0 ? `Thru ${s.holesCompleted}` : 'Not started'}</p>
             </div>
           </div>
@@ -334,13 +365,32 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
             <Flag size={16} className="text-[#00FF87]" /> Your Scorecard
           </h2>
           <p className="text-[10px] text-slate-400">
-            {matchingCourse?.holes ? 'Enter total strokes, or shorthand relative to par: -1 birdie, E even, +2 double bogey.' : 'Enter your total strokes for each hole.'}
+            Enter total strokes taken, or shorthand relative to par: -1 birdie, E even, +2 double bogey. Tap a hole's par if it's wrong — it corrects it for everyone playing this course.
           </p>
           <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
             {Array.from({ length: game.holesPlayed }, (_, i) => i + 1).map(hole => (
               <div key={hole} className="text-center bg-white/5 p-2 rounded-xl border border-white/10">
                 <p className="text-[10px] text-slate-400 font-bold">#{hole}</p>
-                {holePar(hole) && <p className="text-[9px] text-slate-500">Par {holePar(hole)}</p>}
+                {editingPar === hole ? (
+                  <input
+                    type="number"
+                    autoFocus
+                    value={parDraft}
+                    onChange={(e) => setParDraft(e.target.value)}
+                    onBlur={commitParEdit}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+                    className="w-full bg-transparent text-center text-[9px] text-[#00FF87] focus:outline-none"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => startEditPar(hole)}
+                    className={`text-[9px] underline decoration-dotted ${realHolePar(hole) ? 'text-slate-500 hover:text-[#00FF87]' : 'text-amber-500/80 hover:text-amber-400'}`}
+                    title={realHolePar(hole) ? "Tap to correct this hole's par" : 'Par not on file for this course — assumed 4, tap to set the real number'}
+                  >
+                    Par {holePar(hole)}
+                  </button>
+                )}
                 <input
                   type="text"
                   inputMode="text"

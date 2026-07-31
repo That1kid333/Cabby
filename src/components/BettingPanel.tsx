@@ -91,8 +91,13 @@ export const BettingPanel: React.FC<BettingPanelProps> = ({ game, currentUser, o
         <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
           <HandCoins size={16} className="text-[#FFD700]" /> Side Bets
         </h2>
-        {!showForm && otherPlayers.length > 0 && (
-          <button onClick={() => setShowForm(true)} className="text-xs text-[#00FF87] font-bold hover:underline flex items-center gap-1">
+        {!showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            disabled={otherPlayers.length === 0}
+            title={otherPlayers.length === 0 ? 'Invite at least one other player to the game first' : undefined}
+            className="text-xs text-[#00FF87] font-bold hover:underline flex items-center gap-1 disabled:text-slate-500 disabled:no-underline disabled:cursor-not-allowed"
+          >
             <Plus size={14} /> Propose a Bet
           </button>
         )}
@@ -100,6 +105,7 @@ export const BettingPanel: React.FC<BettingPanelProps> = ({ game, currentUser, o
 
       <p className="text-[10px] text-slate-500">
         Friendly wagers between whoever agrees to them. Cabby only tracks who's in and whether it's settled — you pay each other however you want (Apple Pay, Cash App, cash).
+        {otherPlayers.length === 0 && ' No one else has joined this game yet — invite a friend to make a bet with.'}
       </p>
 
       {error && <p className="text-xs font-bold text-red-400 bg-red-500/10 p-2.5 rounded-xl border border-red-500/20">{error}</p>}
