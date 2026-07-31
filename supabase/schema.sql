@@ -95,14 +95,33 @@ ALTER TABLE public.golfers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rounds ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_feed ENABLE ROW LEVEL SECURITY;
 
+-- Policies are dropped-and-recreated so this whole file is safe to re-run
+-- against a database that already has an earlier version of these policies.
+DROP POLICY IF EXISTS "Public golfers read access" ON public.golfers;
 CREATE POLICY "Public golfers read access" ON public.golfers FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public rounds read access" ON public.rounds;
 CREATE POLICY "Public rounds read access" ON public.rounds FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public activity read access" ON public.activity_feed;
 CREATE POLICY "Public activity read access" ON public.activity_feed FOR SELECT USING (true);
 
-CREATE POLICY "Users can insert their own rounds" ON public.rounds FOR INSERT WITH CHECK (true);
-CREATE POLICY "Users can insert activity" ON public.activity_feed FOR INSERT WITH CHECK (true);
-CREATE POLICY "Users can update activity reactions" ON public.activity_feed FOR UPDATE USING (true);
+-- NOTE: golfers had RLS enabled from day one but was missing an INSERT policy,
+-- which silently blocked every sign-up. This is the fix.
+DROP POLICY IF EXISTS "Users can create their own golfer row" ON public.golfers;
+CREATE POLICY "Users can create their own golfer row" ON public.golfers FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Users can update their own golfer row" ON public.golfers;
 CREATE POLICY "Users can update their own golfer row" ON public.golfers FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "Users can insert their own rounds" ON public.rounds;
+CREATE POLICY "Users can insert their own rounds" ON public.rounds FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Users can insert activity" ON public.activity_feed;
+CREATE POLICY "Users can insert activity" ON public.activity_feed FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Users can update activity reactions" ON public.activity_feed;
+CREATE POLICY "Users can update activity reactions" ON public.activity_feed FOR UPDATE USING (true);
 
 -- Safe to re-run against an already-deployed database that predates these columns.
 ALTER TABLE public.golfers ADD COLUMN IF NOT EXISTS target_handicap NUMERIC(4, 1);
