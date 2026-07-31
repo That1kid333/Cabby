@@ -111,7 +111,7 @@ export const Leaderboards: React.FC<LeaderboardsProps> = ({ onOpenQrShare, onOpe
       <div className="glass-panel p-4 sm:p-6 rounded-3xl space-y-3">
         {sortedGolfers.map((golfer, index) => {
           const rank = index + 1;
-          const isCurrentUser = golfer.id === currentUser.id;
+          const isCurrentUser = currentUser ? golfer.id === currentUser.id : false;
 
           let rankBadge = (
             <span className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-extrabold text-sm text-slate-300">

@@ -8,7 +8,7 @@ export const CourseHandicapCalculator: React.FC = () => {
 
   const [selectedCourseId, setSelectedCourseId] = useState<string>(courses[0]?.id || '');
   const [selectedTeeId, setSelectedTeeId] = useState<string>(courses[0]?.tees[0]?.id || '');
-  const [customIndex, setCustomIndex] = useState<string>(currentUser.handicapIndex.toString());
+  const [customIndex, setCustomIndex] = useState<string>((currentUser?.handicapIndex ?? 7.2).toString());
   const [allowance, setAllowance] = useState<number>(95); // Default 95% for Stroke Play
 
   const currentCourse = courses.find(c => c.id === selectedCourseId) || courses[0];
@@ -65,10 +65,10 @@ export const CourseHandicapCalculator: React.FC = () => {
                 placeholder="e.g. 7.2"
               />
               <button
-                onClick={() => setCustomIndex(currentUser.handicapIndex.toString())}
+                onClick={() => setCustomIndex((currentUser?.handicapIndex ?? 7.2).toString())}
                 className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded-xl text-xs font-bold text-[#00FF87] whitespace-nowrap border border-white/10"
               >
-                Use My Index ({formatHandicapIndex(currentUser.handicapIndex)})
+                Use My Index ({formatHandicapIndex(currentUser?.handicapIndex ?? 7.2)})
               </button>
             </div>
           </div>

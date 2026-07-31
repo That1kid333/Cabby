@@ -1,114 +1,270 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { GolfCourse, GolferProfile, GolfRound, ActivityItem } from '../types';
-import { INITIAL_COURSES, INITIAL_GOLFERS, INITIAL_ROUNDS, INITIAL_ACTIVITIES } from '../lib/sampleData';
+import { supabase, isSupabaseConfigured, seedDefaultCoursesIfEmpty } from '../lib/supabase';
 import { calculateDifferential, calculateHandicapIndex } from '../lib/whsEngine';
+import { INITIAL_GOLFERS, INITIAL_ROUNDS, INITIAL_ACTIVITIES, INITIAL_COURSES } from '../lib/sampleData';
 
 interface AppContextType {
-  currentUser: GolferProfile;
+  currentUser: GolferProfile | null;
+  isAuthenticated: boolean;
   golfers: GolferProfile[];
   rounds: GolfRound[];
   courses: GolfCourse[];
   activities: ActivityItem[];
-  userRounds: GolfRound[]; // Rounds belonging to current user
+  userRounds: GolfRound[];
   
-  // Actions
-  addRound: (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName' | 'golferAvatar'>) => void;
-  deleteRound: (roundId: string) => void;
-  addFriendByCode: (code: string) => { success: boolean; message: string };
-  addCustomCourse: (course: GolfCourse) => void;
+  // Auth & Actions
+  signUpUser: (email: string, pass: string, name: string, homeCourse: string) => Promise<{ success: boolean; message: string }>;
+  signInUser: (email: string, pass: string) => Promise<{ success: boolean; message: string }>;
+  signOutUser: () => Promise<void>;
+  loginAsGuest: () => void;
+  
+  addRound: (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName' | 'golferAvatar'>) => Promise<void>;
+  deleteRound: (roundId: string) => Promise<void>;
+  addFriendByCode: (code: string) => Promise<{ success: boolean; message: string }>;
+  addCustomCourse: (course: GolfCourse) => Promise<void>;
   reactToActivity: (activityId: string, reactionType: 'fire' | 'golf' | 'applause' | 'trophy') => void;
-  switchActiveGolfer: (golferId: string) => void;
   verifyRound: (roundId: string) => void;
-  updateProfile: (updatedData: Partial<GolferProfile>) => void;
+  updateProfile: (updatedData: Partial<GolferProfile>) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'cabby_golf_data_v1';
-
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize state from LocalStorage if present, else sample data
-  const [golfers, setGolfers] = useState<GolferProfile[]>(() => {
-    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_golfers`);
-    return saved ? JSON.parse(saved) : INITIAL_GOLFERS;
-  });
+  const [currentUser, setCurrentUser] = useState<GolferProfile | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  
+  const [golfers, setGolfers] = useState<GolferProfile[]>(INITIAL_GOLFERS);
+  const [rounds, setRounds] = useState<GolfRound[]>(INITIAL_ROUNDS);
+  const [courses, setCourses] = useState<GolfCourse[]>(INITIAL_COURSES);
+  const [activities, setActivities] = useState<ActivityItem[]>(INITIAL_ACTIVITIES);
 
-  const [currentGolferId, setCurrentGolferId] = useState<string>('golfer-jt');
-
-  const [rounds, setRounds] = useState<GolfRound[]>(() => {
-    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_rounds`);
-    return saved ? JSON.parse(saved) : INITIAL_ROUNDS;
-  });
-
-  const [courses, setCourses] = useState<GolfCourse[]>(() => {
-    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_courses`);
-    return saved ? JSON.parse(saved) : INITIAL_COURSES;
-  });
-
-  const [activities, setActivities] = useState<ActivityItem[]>(() => {
-    const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_activities`);
-    return saved ? JSON.parse(saved) : INITIAL_ACTIVITIES;
-  });
-
-  // Save changes to LocalStorage
+  // Initialize DB Data & Auth Listener
   useEffect(() => {
-    localStorage.setItem(`${LOCAL_STORAGE_KEY}_golfers`, JSON.stringify(golfers));
-  }, [golfers]);
+    async function initData() {
+      // 1. Seed courses if needed & load courses
+      const loadedCourses = await seedDefaultCoursesIfEmpty();
+      setCourses(loadedCourses);
 
-  useEffect(() => {
-    localStorage.setItem(`${LOCAL_STORAGE_KEY}_rounds`, JSON.stringify(rounds));
-  }, [rounds]);
+      // 2. Fetch golfers & rounds if Supabase is configured
+      if (supabase && isSupabaseConfigured) {
+        try {
+          const { data: gData } = await supabase.from('golfers').select('*');
+          if (gData && gData.length > 0) {
+            const mappedGolfers: GolferProfile[] = gData.map(g => ({
+              id: g.id,
+              name: g.name,
+              email: g.email,
+              friendCode: g.friend_code,
+              avatar: g.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+              homeCourse: g.home_course || 'Pebble Beach Golf Links',
+              targetHandicap: 4.0,
+              friends: [],
+              joinedDate: g.created_at,
+              handicapIndex: Number(g.handicap_index || 54.0),
+              lowestHandicapIndex: Number(g.lowest_handicap_index || 54.0),
+              totalRounds: Number(g.total_rounds || 0),
+              bestGrossScore: Number(g.best_gross_score || 999),
+              bestDifferential: Number(g.best_differential || 99.9),
+              eaglesCount: Number(g.eagles_count || 0),
+              holesInOneCount: Number(g.holes_in_one_count || 0)
+            }));
+            setGolfers(mappedGolfers);
+          }
 
-  useEffect(() => {
-    localStorage.setItem(`${LOCAL_STORAGE_KEY}_courses`, JSON.stringify(courses));
-  }, [courses]);
-
-  useEffect(() => {
-    localStorage.setItem(`${LOCAL_STORAGE_KEY}_activities`, JSON.stringify(activities));
-  }, [activities]);
-
-  const currentUser = golfers.find(g => g.id === currentGolferId) || golfers[0];
-  const userRounds = rounds.filter(r => r.golferId === currentUser.id);
-
-  // Recalculate handicap index for a golfer whenever their rounds change
-  const recalculateGolferHandicap = (golferId: string, currentRounds: GolfRound[]) => {
-    const golferRounds = currentRounds.filter(r => r.golferId === golferId);
-    const { handicapIndex, bestRoundIds } = calculateHandicapIndex(golferRounds);
-    
-    // Update isBestRound flag on rounds
-    setRounds(prev => prev.map(r => {
-      if (r.golferId === golferId) {
-        return { ...r, isBestRound: bestRoundIds.includes(r.id) };
+          const { data: rData } = await supabase.from('rounds').select('*').order('date', { ascending: false });
+          if (rData && rData.length > 0) {
+            const mappedRounds: GolfRound[] = rData.map(r => ({
+              id: r.id,
+              golferId: r.golfer_id,
+              golferName: r.course_name, // fallback
+              courseId: r.course_name,
+              courseName: r.course_name,
+              teeName: r.tee_name,
+              date: r.date,
+              score: r.score,
+              holesPlayed: r.holes_played as 9 | 18,
+              rating: Number(r.rating),
+              slope: Number(r.slope),
+              par: Number(r.par),
+              pcc: Number(r.pcc || 0),
+              differential: Number(r.differential),
+              notes: r.notes
+            }));
+            setRounds(mappedRounds);
+          }
+        } catch (err) {
+          console.error('Error fetching Supabase data:', err);
+        }
       }
-      return r;
-    }));
+    }
 
-    // Update golfer profile
-    setGolfers(prev => prev.map(g => {
-      if (g.id === golferId) {
-        const lowestDiff = golferRounds.length > 0
-          ? Math.min(...golferRounds.map(r => r.differential))
-          : 99.9;
-        const bestGross = golferRounds.length > 0
-          ? Math.min(...golferRounds.map(r => r.score))
-          : 999;
-        const lowestIndex = Math.min(g.lowestHandicapIndex || 54.0, handicapIndex);
+    initData();
+  }, []);
 
-        return {
-          ...g,
-          handicapIndex,
-          lowestHandicapIndex: lowestIndex,
-          totalRounds: golferRounds.length,
-          bestGrossScore: bestGross,
-          bestDifferential: lowestDiff
-        };
+  // Supabase Auth Session listener
+  useEffect(() => {
+    if (!supabase) return;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setIsAuthenticated(true);
+        loadUserProfile(session.user.id, session.user.email);
       }
-      return g;
-    }));
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setIsAuthenticated(true);
+        loadUserProfile(session.user.id, session.user.email);
+      } else if (!currentUser) {
+        setIsAuthenticated(false);
+      }
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  const loadUserProfile = async (userId: string, email?: string) => {
+    if (!supabase) return;
+    const { data } = await supabase.from('golfers').select('*').eq('user_id', userId).single();
+    if (data) {
+      setCurrentUser({
+        id: data.id,
+        name: data.name,
+        email: data.email || email,
+        friendCode: data.friend_code,
+        avatar: data.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+        homeCourse: data.home_course || 'Pebble Beach Golf Links',
+        targetHandicap: 4.0,
+        friends: [],
+        joinedDate: data.created_at,
+        handicapIndex: Number(data.handicap_index || 54.0),
+        lowestHandicapIndex: Number(data.lowest_handicap_index || 54.0),
+        totalRounds: Number(data.total_rounds || 0),
+        bestGrossScore: Number(data.best_gross_score || 999),
+        bestDifferential: Number(data.best_differential || 99.9),
+        eaglesCount: Number(data.eagles_count || 0),
+        holesInOneCount: Number(data.holes_in_one_count || 0)
+      });
+    }
   };
 
-  const addRound = (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName' | 'golferAvatar'>) => {
+  const loginAsGuest = () => {
+    setCurrentUser(INITIAL_GOLFERS[0]); // JT
+    setIsAuthenticated(true);
+  };
+
+  const signUpUser = async (email: string, pass: string, name: string, homeCourse: string) => {
+    if (!supabase) {
+      // Fallback guest creation
+      const friendCode = `CB-${Math.floor(1000 + Math.random() * 9000)}-${name.slice(0, 2).toUpperCase()}`;
+      const newG: GolferProfile = {
+        id: `g-${Date.now()}`,
+        name,
+        email,
+        friendCode,
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+        homeCourse,
+        targetHandicap: 5.0,
+        friends: [],
+        joinedDate: new Date().toISOString(),
+        handicapIndex: 54.0,
+        lowestHandicapIndex: 54.0,
+        totalRounds: 0,
+        bestGrossScore: 999,
+        bestDifferential: 99.9,
+        eaglesCount: 0,
+        holesInOneCount: 0
+      };
+      setGolfers(prev => [newG, ...prev]);
+      setCurrentUser(newG);
+      setIsAuthenticated(true);
+      return { success: true, message: 'Account created successfully!' };
+    }
+
+    const { data: authData, error: authErr } = await supabase.auth.signUp({ email, password: pass });
+    if (authErr || !authData.user) {
+      return { success: false, message: authErr?.message || 'Failed to create account.' };
+    }
+
+    const friendCode = `CB-${Math.floor(1000 + Math.random() * 9000)}-${name.slice(0, 2).toUpperCase()}`;
+
+    const { data: gData, error: gErr } = await supabase
+      .from('golfers')
+      .insert({
+        user_id: authData.user.id,
+        name,
+        email,
+        friend_code: friendCode,
+        home_course: homeCourse,
+        handicap_index: 54.0,
+        lowest_handicap_index: 54.0
+      })
+      .select()
+      .single();
+
+    if (gErr) {
+      return { success: false, message: gErr.message };
+    }
+
+    const newGolfer: GolferProfile = {
+      id: gData.id,
+      name: gData.name,
+      email: gData.email,
+      friendCode: gData.friend_code,
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      homeCourse: gData.home_course,
+      targetHandicap: 5.0,
+      friends: [],
+      joinedDate: gData.created_at,
+      handicapIndex: 54.0,
+      lowestHandicapIndex: 54.0,
+      totalRounds: 0,
+      bestGrossScore: 999,
+      bestDifferential: 99.9,
+      eaglesCount: 0,
+      holesInOneCount: 0
+    };
+
+    setGolfers(prev => [newGolfer, ...prev]);
+    setCurrentUser(newGolfer);
+    setIsAuthenticated(true);
+    return { success: true, message: 'Account created successfully!' };
+  };
+
+  const signInUser = async (email: string, pass: string) => {
+    if (!supabase) {
+      loginAsGuest();
+      return { success: true, message: 'Signed in as demo guest.' };
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (error || !data.user) {
+      return { success: false, message: error?.message || 'Invalid credentials.' };
+    }
+
+    await loadUserProfile(data.user.id, data.user.email);
+    setIsAuthenticated(true);
+    return { success: true, message: 'Welcome back!' };
+  };
+
+  const signOutUser = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+  };
+
+  const userRounds = currentUser ? rounds.filter(r => r.golferId === currentUser.id) : [];
+
+  const addRound = async (roundData: Omit<GolfRound, 'id' | 'differential' | 'golferId' | 'golferName' | 'golferAvatar'>) => {
+    if (!currentUser) return;
+
     const differential = calculateDifferential(
       roundData.score,
       roundData.rating,
@@ -131,18 +287,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const updatedRounds = [newRound, ...rounds];
     setRounds(updatedRounds);
 
-    // Recalculate WHS Index
-    recalculateGolferHandicap(currentUser.id, updatedRounds);
+    if (supabase) {
+      await supabase.from('rounds').insert({
+        golfer_id: currentUser.id,
+        course_name: roundData.courseName,
+        tee_name: roundData.teeName,
+        date: roundData.date,
+        score: roundData.score,
+        holes_played: roundData.holesPlayed,
+        rating: roundData.rating,
+        slope: roundData.slope,
+        par: roundData.par,
+        pcc: roundData.pcc,
+        differential,
+        notes: roundData.notes
+      });
+    }
 
-    // Trigger celebration confetti
     confetti({
-      particleCount: 80,
-      spread: 70,
+      particleCount: 90,
+      spread: 80,
       origin: { y: 0.6 },
-      colors: ['#05C46B', '#00FF87', '#FFD700', '#FFFFFF']
+      colors: ['#00FF87', '#00E676', '#FFD700', '#FFFFFF']
     });
 
-    // Create activity post
     const isPersonalBest = currentUser.bestGrossScore > roundData.score;
     const newActivity: ActivityItem = {
       id: `act-${Date.now()}`,
@@ -161,43 +329,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActivities(prev => [newActivity, ...prev]);
   };
 
-  const deleteRound = (roundId: string) => {
-    const updatedRounds = rounds.filter(r => r.id !== roundId);
-    setRounds(updatedRounds);
-    recalculateGolferHandicap(currentUser.id, updatedRounds);
+  const deleteRound = async (roundId: string) => {
+    setRounds(prev => prev.filter(r => r.id !== roundId));
+    if (supabase) {
+      await supabase.from('rounds').delete().eq('id', roundId);
+    }
   };
 
-  const addFriendByCode = (code: string): { success: boolean; message: string } => {
+  const addFriendByCode = async (code: string) => {
+    if (!currentUser) return { success: false, message: 'Please sign in first.' };
     const cleanCode = code.trim().toUpperCase();
-    const foundGolfer = golfers.find(g => g.friendCode.toUpperCase() === cleanCode);
+    const found = golfers.find(g => g.friendCode.toUpperCase() === cleanCode);
 
-    if (!foundGolfer) {
-      return { success: false, message: 'Invalid friend code. Please check and try again!' };
-    }
+    if (!found) return { success: false, message: 'Invalid friend code.' };
+    if (found.id === currentUser.id) return { success: false, message: 'This is your own code!' };
 
-    if (foundGolfer.id === currentUser.id) {
-      return { success: false, message: 'That is your own Cabby friend code!' };
-    }
-
-    if (currentUser.friends.includes(foundGolfer.id)) {
-      return { success: false, message: `${foundGolfer.name} is already in your friends roster!` };
-    }
-
-    // Add friend mutually
     setGolfers(prev => prev.map(g => {
-      if (g.id === currentUser.id) {
-        return { ...g, friends: [...g.friends, foundGolfer.id] };
-      }
-      if (g.id === foundGolfer.id) {
-        return { ...g, friends: [...g.friends, currentUser.id] };
-      }
+      if (g.id === currentUser.id) return { ...g, friends: [...g.friends, found.id] };
       return g;
     }));
 
-    return { success: true, message: `Successfully connected with ${foundGolfer.name}!` };
+    return { success: true, message: `Connected with ${found.name}!` };
   };
 
-  const addCustomCourse = (course: GolfCourse) => {
+  const addCustomCourse = async (course: GolfCourse) => {
     setCourses(prev => [course, ...prev]);
   };
 
@@ -224,11 +379,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
-  const switchActiveGolfer = (golferId: string) => {
-    setCurrentGolferId(golferId);
-  };
-
   const verifyRound = (roundId: string) => {
+    if (!currentUser) return;
     setRounds(prev => prev.map(r => {
       if (r.id === roundId) {
         const verifiedBy = r.verifiedBy || [];
@@ -244,30 +396,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
-  const updateProfile = (updatedData: Partial<GolferProfile>) => {
-    setGolfers(prev => prev.map(g => {
-      if (g.id === currentUser.id) {
-        return { ...g, ...updatedData };
-      }
-      return g;
-    }));
+  const updateProfile = async (updatedData: Partial<GolferProfile>) => {
+    if (!currentUser) return;
+    setCurrentUser(prev => prev ? { ...prev, ...updatedData } : null);
+    if (supabase) {
+      await supabase.from('golfers').update({
+        name: updatedData.name,
+        home_course: updatedData.homeCourse,
+        bio: updatedData.bio
+      }).eq('id', currentUser.id);
+    }
   };
 
   return (
     <AppContext.Provider
       value={{
         currentUser,
+        isAuthenticated,
         golfers,
         rounds,
         courses,
         activities,
         userRounds,
+        signUpUser,
+        signInUser,
+        signOutUser,
+        loginAsGuest,
         addRound,
         deleteRound,
         addFriendByCode,
         addCustomCourse,
         reactToActivity,
-        switchActiveGolfer,
         verifyRound,
         updateProfile
       }}

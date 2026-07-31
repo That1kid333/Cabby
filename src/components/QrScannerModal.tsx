@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Camera, QrCode, Check, AlertCircle } from 'lucide-react';
+import { X, Camera } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 interface QrScannerModalProps {
@@ -14,8 +14,8 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose 
 
   if (!isOpen) return null;
 
-  const handleSimulatedScan = (code: string) => {
-    const res = addFriendByCode(code);
+  const handleSimulatedScan = async (code: string) => {
+    const res = await addFriendByCode(code);
     setStatusMessage(res.message);
     if (res.success) {
       setTimeout(() => {
@@ -27,7 +27,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose 
 
   return (
     <div className="modal-overlay">
-      <div className="glass-panel w-full max-w-md p-6 rounded-3xl border-white/15 relative space-y-6 text-center">
+      <div className="glass-card w-full max-w-md p-6 rounded-3xl border-white/15 relative space-y-6 text-center">
         
         <button
           onClick={onClose}
@@ -37,7 +37,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose 
         </button>
 
         <div className="space-y-1">
-          <h2 className="text-2xl font-extrabold text-white font-['Outfit'] flex items-center justify-center gap-2">
+          <h2 className="text-2xl font-black text-white font-['Outfit'] flex items-center justify-center gap-2">
             <Camera className="text-[#00FF87]" size={24} /> QR Code Camera Scanner
           </h2>
           <p className="text-xs text-slate-400">
@@ -45,7 +45,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose 
           </p>
         </div>
 
-        {/* Viewfinder Camera Graphic */}
         <div className="relative w-64 h-64 mx-auto rounded-3xl overflow-hidden border-2 border-[#00FF87] bg-slate-900 flex flex-col items-center justify-center space-y-3 shadow-2xl">
           <div className="absolute inset-4 border border-dashed border-[#00FF87]/50 rounded-2xl animate-pulse pointer-events-none" />
           
@@ -55,7 +54,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose 
           </p>
         </div>
 
-        {/* Quick Simulator Test Selection */}
         <div className="space-y-2 text-left border-t border-white/10 pt-4">
           <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
             Test Quick Scan with Golf Buddy:
@@ -64,7 +62,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose 
             <select
               value={selectedGolferId}
               onChange={(e) => setSelectedGolferId(e.target.value)}
-              className="flex-1 bg-[#0E1626] border border-white/15 rounded-xl px-3 py-2 text-xs text-white"
+              className="flex-1 bg-[#0A0F1D] border border-white/15 rounded-xl px-3 py-2 text-xs text-white"
             >
               {golfers.map(g => (
                 <option key={g.id} value={g.id}>
@@ -77,7 +75,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose 
                 const target = golfers.find(g => g.id === selectedGolferId);
                 if (target) handleSimulatedScan(target.friendCode);
               }}
-              className="bg-gradient-to-r from-[#05C46B] to-[#00FF87] text-[#070B16] font-bold px-4 py-2 rounded-xl text-xs"
+              className="btn-primary text-xs px-4 py-2 font-black font-['Outfit']"
             >
               Simulate Scan
             </button>

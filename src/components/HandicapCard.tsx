@@ -16,6 +16,8 @@ export const HandicapCard: React.FC<HandicapCardProps> = ({
 }) => {
   const { currentUser, userRounds } = useApp();
 
+  if (!currentUser) return null;
+
   const { handicapIndex, bestRoundIds, differentialsUsed, totalEvaluatedRounds } =
     calculateHandicapIndex(userRounds);
 
