@@ -20,16 +20,16 @@ export const CourseDatabase: React.FC = () => {
       <div className="glass-panel p-6 sm:p-8 rounded-3xl border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-white font-['Outfit'] flex items-center gap-2">
-            <MapPin className="text-[#00FF87]" size={28} /> Golf Course & Tee Database
+            <MapPin className="text-[#7FA65C]" size={28} /> Golf Course & Tee Database
           </h1>
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-stone-300">
             Real course ratings and slopes, added by Cabby golfers and sourced from OpenGolfAPI.
           </p>
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto">
           <div className="relative flex-1 md:w-64">
-            <Search size={18} className="absolute left-3.5 top-3 text-slate-400" />
+            <Search size={18} className="absolute left-3.5 top-3 text-stone-400" />
             <input
               type="text"
               placeholder="Search courses or location..."
@@ -49,19 +49,19 @@ export const CourseDatabase: React.FC = () => {
       </div>
 
       {showAdd && (
-        <div className="glass-panel p-6 rounded-3xl border-[#00FF87]/30">
+        <div className="glass-panel p-6 rounded-3xl border-[#7FA65C]/30">
           <CourseSearch onSelect={() => setShowAdd(false)} />
         </div>
       )}
 
       {filteredCourses.length === 0 && (
         <div className="glass-panel p-10 rounded-3xl border-white/10 text-center space-y-2">
-          <MapPin className="mx-auto text-slate-500" size={28} />
-          <p className="text-sm text-slate-300">
+          <MapPin className="mx-auto text-stone-500" size={28} />
+          <p className="text-sm text-stone-300">
             {courses.length === 0 ? 'No courses added yet.' : 'No courses match your search.'}
           </p>
           {courses.length === 0 && (
-            <button onClick={() => setShowAdd(true)} className="text-xs text-[#00FF87] hover:underline font-bold">
+            <button onClick={() => setShowAdd(true)} className="text-xs text-[#7FA65C] hover:underline font-bold">
               Add the first one →
             </button>
           )}
@@ -73,23 +73,23 @@ export const CourseDatabase: React.FC = () => {
         {filteredCourses.map((course) => (
           <div
             key={course.id}
-            className="glass-panel p-6 rounded-3xl space-y-4 border-white/10 hover:border-[#00FF87]/40 transition-all"
+            className="glass-panel p-6 rounded-3xl space-y-4 border-white/10 hover:border-[#7FA65C]/40 transition-all"
           >
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white font-['Outfit']">{course.name}</h2>
-                <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
-                  <MapPin size={12} className="text-[#00FF87]" /> {course.location}
+                <p className="text-xs text-stone-400 flex items-center gap-1 mt-0.5">
+                  <MapPin size={12} className="text-[#7FA65C]" /> {course.location}
                 </p>
               </div>
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#05C46B]/20 text-[#00FF87] border border-[#05C46B]/30">
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#4F6B3A]/20 text-[#7FA65C] border border-[#4F6B3A]/30">
                 {course.tees.length} Tee Set{course.tees.length === 1 ? '' : 's'}
               </span>
             </div>
 
             {/* Tee Set List */}
             <div className="space-y-2 pt-2 border-t border-white/10">
-              <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+              <p className="text-xs font-bold text-stone-300 uppercase tracking-wider">
                 Course Ratings
               </p>
 
@@ -109,15 +109,15 @@ export const CourseDatabase: React.FC = () => {
 
                     <div className="grid grid-cols-3 gap-1 text-center pt-1 text-[11px]">
                       <div>
-                        <span className="text-[9px] text-slate-400 block">Rating</span>
+                        <span className="text-[9px] text-stone-400 block">Rating</span>
                         <span className="font-bold text-white">{tee.rating}</span>
                       </div>
                       <div>
-                        <span className="text-[9px] text-slate-400 block">Slope</span>
-                        <span className="font-bold text-[#00FF87]">{tee.slope}</span>
+                        <span className="text-[9px] text-stone-400 block">Slope</span>
+                        <span className="font-bold text-[#7FA65C]">{tee.slope}</span>
                       </div>
                       <div>
-                        <span className="text-[9px] text-slate-400 block">Par</span>
+                        <span className="text-[9px] text-stone-400 block">Par</span>
                         <span className="font-bold text-white">{tee.par}</span>
                       </div>
                     </div>

@@ -108,34 +108,34 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose 
 
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+          className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all"
         >
           <X size={20} />
         </button>
 
         <div className="space-y-1">
           <h2 className="text-2xl font-black text-white font-['Outfit'] flex items-center justify-center gap-2">
-            <Camera className="text-[#00FF87]" size={24} /> Scan A Friend's QR Code
+            <Camera className="text-[#7FA65C]" size={24} /> Scan A Friend's QR Code
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-stone-400">
             Point your camera at a buddy's Cabby QR code to connect instantly.
           </p>
         </div>
 
         {supportsDetector ? (
-          <div className="relative w-64 h-64 mx-auto rounded-3xl overflow-hidden border-2 border-[#00FF87] bg-slate-900 shadow-2xl">
+          <div className="relative w-64 h-64 mx-auto rounded-3xl overflow-hidden border-2 border-[#7FA65C] bg-stone-900 shadow-2xl">
             <video ref={videoRef} muted playsInline className="w-full h-full object-cover" />
-            <div className="absolute inset-4 border border-dashed border-[#00FF87]/50 rounded-2xl pointer-events-none" />
+            <div className="absolute inset-4 border border-dashed border-[#7FA65C]/50 rounded-2xl pointer-events-none" />
             {!scanning && !cameraError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 text-xs text-slate-300">
+              <div className="absolute inset-0 flex items-center justify-center bg-stone-900/80 text-xs text-stone-300">
                 Starting camera…
               </div>
             )}
           </div>
         ) : (
-          <div className="w-64 h-64 mx-auto rounded-3xl border-2 border-white/10 bg-slate-900 flex flex-col items-center justify-center gap-2 px-6 text-center">
+          <div className="w-64 h-64 mx-auto rounded-3xl border-2 border-white/10 bg-stone-900 flex flex-col items-center justify-center gap-2 px-6 text-center">
             <AlertTriangle size={28} className="text-amber-400" />
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-stone-300">
               Your browser doesn't support live QR scanning. Enter the code below instead.
             </p>
           </div>
@@ -148,7 +148,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose 
         )}
 
         <form onSubmit={handleManualSubmit} className="space-y-2 text-left border-t border-white/10 pt-4">
-          <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+          <label className="text-xs font-bold text-stone-300 uppercase tracking-wider block">
             Or enter their friend code
           </label>
           <div className="flex gap-2">
@@ -165,7 +165,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose 
           </div>
 
           {statusMessage && (
-            <p className={`text-xs font-bold text-center pt-1 ${statusMessage.type === 'success' ? 'text-[#00FF87]' : 'text-red-400'}`}>
+            <p className={`text-xs font-bold text-center pt-1 ${statusMessage.type === 'success' ? 'text-[#7FA65C]' : 'text-red-400'}`}>
               {statusMessage.text}
             </p>
           )}

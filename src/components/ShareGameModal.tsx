@@ -28,23 +28,23 @@ export const ShareGameModal: React.FC<ShareGameModalProps> = ({ isOpen, onClose,
 
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+          className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all"
         >
           <X size={20} />
         </button>
 
         <div className="space-y-1">
           <h2 className="text-2xl font-black text-white font-['Outfit'] flex items-center justify-center gap-2">
-            <Share2 className="text-[#00FF87]" size={22} /> Share This Game
+            <Share2 className="text-[#7FA65C]" size={22} /> Share This Game
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-stone-400">
             Opens straight to {game.courseName} — anyone signed in to Cabby with this link can view and join.
           </p>
         </div>
 
         <div className="p-6 rounded-3xl bg-white/5 border border-white/15 inline-block mx-auto shadow-2xl">
           <div className="bg-white p-4 rounded-2xl inline-block shadow-inner">
-            <QRCodeSVG value={shareUrl} size={180} fgColor="#040711" bgColor="#FFFFFF" level="H" includeMargin={false} />
+            <QRCodeSVG value={shareUrl} size={180} fgColor="#14150F" bgColor="#FFFFFF" level="H" includeMargin={false} />
           </div>
         </div>
 

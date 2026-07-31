@@ -134,17 +134,17 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
 
   if (pendingTees) {
     return (
-      <div className="p-4 rounded-2xl bg-white/5 border border-[#00FF87]/30 space-y-3">
+      <div className="p-4 rounded-2xl bg-white/5 border border-[#7FA65C]/30 space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-bold text-white">{pendingTees.result.name}</h3>
-            <p className="text-[11px] text-slate-400">{[pendingTees.result.city, pendingTees.result.state].filter(Boolean).join(', ')}</p>
+            <p className="text-[11px] text-stone-400">{[pendingTees.result.city, pendingTees.result.state].filter(Boolean).join(', ')}</p>
           </div>
-          <button type="button" onClick={() => { setPendingTees(null); setError(null); }} className="text-[11px] text-slate-400 hover:text-white">
+          <button type="button" onClick={() => { setPendingTees(null); setError(null); }} className="text-[11px] text-stone-400 hover:text-white">
             Back
           </button>
         </div>
-        <p className="text-[11px] text-slate-400 uppercase tracking-wider font-bold">Pick the tee you played</p>
+        <p className="text-[11px] text-stone-400 uppercase tracking-wider font-bold">Pick the tee you played</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {pendingTees.tees.map((tee, i) => (
             <button
@@ -152,13 +152,13 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
               type="button"
               disabled={confirmingTee !== null}
               onClick={() => handleConfirmTee(tee, i)}
-              className="p-2.5 rounded-xl border border-white/10 bg-white/5 hover:border-[#00FF87]/50 text-left transition-all disabled:opacity-50 flex items-center justify-between gap-2"
+              className="p-2.5 rounded-xl border border-white/10 bg-white/5 hover:border-[#7FA65C]/50 text-left transition-all disabled:opacity-50 flex items-center justify-between gap-2"
             >
               <div>
                 <p className="text-xs font-bold text-white">{tee.name}</p>
-                <p className="text-[10px] text-slate-400">R: {tee.rating} / S: {tee.slope}</p>
+                <p className="text-[10px] text-stone-400">R: {tee.rating} / S: {tee.slope}</p>
               </div>
-              {confirmingTee === i && <Loader2 size={14} className="animate-spin text-[#00FF87] shrink-0" />}
+              {confirmingTee === i && <Loader2 size={14} className="animate-spin text-[#7FA65C] shrink-0" />}
             </button>
           ))}
         </div>
@@ -170,7 +170,7 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
   return (
     <div className="space-y-3">
       <div className="relative">
-        <Search size={16} className="absolute left-3.5 top-3 text-slate-400" />
+        <Search size={16} className="absolute left-3.5 top-3 text-stone-400" />
         <input
           type="text"
           value={query}
@@ -178,26 +178,26 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
           placeholder="Search for your course by name..."
           className="form-input form-input-icon"
         />
-        {searching && <Loader2 size={16} className="absolute right-3.5 top-3 text-slate-400 animate-spin" />}
+        {searching && <Loader2 size={16} className="absolute right-3.5 top-3 text-stone-400 animate-spin" />}
       </div>
 
       {error && <p className="text-xs text-amber-400">{error}</p>}
 
       {localMatches.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Already in Cabby</p>
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Already in Cabby</p>
           {localMatches.map(course => (
             <button
               key={course.id}
               type="button"
               onClick={() => onSelect(course)}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-[#00FF87]/40 text-left transition-all"
+              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-[#7FA65C]/40 text-left transition-all"
             >
               <div>
                 <p className="text-xs font-bold text-white">{course.name}</p>
-                <p className="text-[10px] text-slate-400 flex items-center gap-1"><MapPin size={10} /> {course.location}</p>
+                <p className="text-[10px] text-stone-400 flex items-center gap-1"><MapPin size={10} /> {course.location}</p>
               </div>
-              <CheckCircle2 size={16} className="text-[#00FF87]" />
+              <CheckCircle2 size={16} className="text-[#7FA65C]" />
             </button>
           ))}
         </div>
@@ -205,20 +205,20 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
 
       {externalResults.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Real courses (via OpenGolfAPI)</p>
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Real courses (via OpenGolfAPI)</p>
           {externalResults.map(result => (
             <button
               key={result.externalId}
               type="button"
               disabled={importing === result.externalId}
               onClick={() => handlePickExternal(result)}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-[#00FF87]/40 text-left transition-all disabled:opacity-60"
+              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-[#7FA65C]/40 text-left transition-all disabled:opacity-60"
             >
               <div>
                 <p className="text-xs font-bold text-white">{result.name}</p>
-                <p className="text-[10px] text-slate-400 flex items-center gap-1"><MapPin size={10} /> {[result.city, result.state].filter(Boolean).join(', ')}</p>
+                <p className="text-[10px] text-stone-400 flex items-center gap-1"><MapPin size={10} /> {[result.city, result.state].filter(Boolean).join(', ')}</p>
               </div>
-              {importing === result.externalId ? <Loader2 size={16} className="animate-spin text-slate-400" /> : <Plus size={16} className="text-[#00FF87]" />}
+              {importing === result.externalId ? <Loader2 size={16} className="animate-spin text-stone-400" /> : <Plus size={16} className="text-[#7FA65C]" />}
             </button>
           ))}
         </div>
@@ -228,14 +228,14 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
         <button
           type="button"
           onClick={() => setShowManualForm(!showManualForm)}
-          className="text-xs text-[#00FF87] font-bold hover:underline"
+          className="text-xs text-[#7FA65C] font-bold hover:underline"
         >
           Can't find it? Add it from your scorecard
         </button>
       </div>
 
       {showManualForm && (
-        <div className="p-4 rounded-2xl bg-white/5 border border-[#00FF87]/30 space-y-3">
+        <div className="p-4 rounded-2xl bg-white/5 border border-[#7FA65C]/30 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input type="text" placeholder="Course Name" value={manualName} onChange={(e) => setManualName(e.target.value)} className="form-input form-input-sm" />
             <input type="text" placeholder="Location (e.g. Austin, TX)" value={manualLocation} onChange={(e) => setManualLocation(e.target.value)} className="form-input form-input-sm" />
@@ -250,7 +250,7 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
             type="button"
             onClick={handleManualSubmit}
             disabled={savingManual}
-            className="w-full bg-[#05C46B] text-[#070B16] font-bold py-2 rounded-xl text-xs hover:bg-[#00FF87] disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="w-full bg-[#4F6B3A] text-[#171911] font-bold py-2 rounded-xl text-xs hover:bg-[#7FA65C] disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
             {savingManual && <Loader2 size={14} className="animate-spin" />}
             {savingManual ? 'Saving…' : 'Save & Select Course'}
@@ -258,8 +258,8 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
         </div>
       )}
 
-      <p className="text-[10px] text-slate-500">
-        Real course data via <a href="https://opengolfapi.org" target="_blank" rel="noreferrer" className="underline hover:text-slate-300">OpenGolfAPI</a> (ODbL) — added courses are saved for every Cabby golfer.
+      <p className="text-[10px] text-stone-500">
+        Real course data via <a href="https://opengolfapi.org" target="_blank" rel="noreferrer" className="underline hover:text-stone-300">OpenGolfAPI</a> (ODbL) — added courses are saved for every Cabby golfer.
       </p>
     </div>
   );

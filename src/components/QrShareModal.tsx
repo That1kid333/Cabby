@@ -48,16 +48,16 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
         
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+          className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all"
         >
           <X size={20} />
         </button>
 
         <div className="space-y-1">
           <h2 className="text-2xl font-black text-white font-['Outfit'] flex items-center justify-center gap-2">
-            <QrCode className="text-[#00FF87]" size={24} /> Connect Golf Buddies
+            <QrCode className="text-[#7FA65C]" size={24} /> Connect Golf Buddies
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-stone-400">
             Share your QR code or referral code to sync high scores and round feeds.
           </p>
         </div>
@@ -67,7 +67,7 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
             <QRCodeSVG
               value={shareUrl}
               size={180}
-              fgColor="#040711"
+              fgColor="#14150F"
               bgColor="#FFFFFF"
               level="H"
               includeMargin={false}
@@ -75,18 +75,18 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
           </div>
 
           <div className="space-y-1">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+            <p className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">
               My Unique Cabby Code
             </p>
             <div className="flex items-center justify-center gap-2">
-              <span className="text-2xl font-black text-[#00FF87] tracking-wider font-mono">
+              <span className="text-2xl font-black text-[#7FA65C] tracking-wider font-mono">
                 {currentUser.friendCode}
               </span>
               <button
                 onClick={handleCopyCode}
                 className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all"
               >
-                {copied ? <Check size={16} className="text-[#00FF87]" /> : <Copy size={16} />}
+                {copied ? <Check size={16} className="text-[#7FA65C]" /> : <Copy size={16} />}
               </button>
             </div>
           </div>
@@ -99,11 +99,11 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
           }}
           className="w-full bg-white/10 hover:bg-white/15 text-white font-bold py-2.5 rounded-xl border border-white/10 text-xs flex items-center justify-center gap-2"
         >
-          <QrCode size={16} className="text-[#00FF87]" /> Scan Buddy's QR Code with Camera
+          <QrCode size={16} className="text-[#7FA65C]" /> Scan Buddy's QR Code with Camera
         </button>
 
         <form onSubmit={handleAddFriendSubmit} className="space-y-3 border-t border-white/10 pt-4 text-left">
-          <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+          <label className="text-xs font-bold text-stone-300 uppercase tracking-wider block">
             Enter Buddy Code
           </label>
           <div className="flex gap-2">
@@ -123,7 +123,7 @@ export const QrShareModal: React.FC<QrShareModalProps> = ({
           </div>
 
           {statusMessage && (
-            <p className={`text-xs font-bold ${statusMessage.type === 'success' ? 'text-[#00FF87]' : 'text-red-400'}`}>
+            <p className={`text-xs font-bold ${statusMessage.type === 'success' ? 'text-[#7FA65C]' : 'text-red-400'}`}>
               {statusMessage.text}
             </p>
           )}

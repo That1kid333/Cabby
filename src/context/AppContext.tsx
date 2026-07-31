@@ -288,7 +288,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       particleCount: 70,
       spread: 70,
       origin: { y: 0.6 },
-      colors: ['#00FF87', '#00E676', '#FFD700', '#FFFFFF']
+      colors: ['#7FA65C', '#6B8E4E', '#C9A24B', '#FFFFFF']
     });
 
     const activityPayload = {

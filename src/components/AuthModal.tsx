@@ -74,32 +74,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+          className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all"
         >
           <X size={20} />
         </button>
 
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl mx-auto bg-gradient-to-br from-[#00FF87] to-[#00E676] p-[1.5px] shadow-lg shadow-[#00FF87]/20">
-            <img src="/cabby-logo.svg" alt="Cabby" className="w-full h-full object-cover bg-[#040711] rounded-[14px] p-1.5" />
+          <div className="w-12 h-12 rounded-2xl mx-auto bg-gradient-to-br from-[#7FA65C] to-[#6B8E4E] p-[1.5px] shadow-lg shadow-black/20">
+            <img src="/cabby-logo.svg" alt="Cabby" className="w-full h-full object-cover bg-[#14150F] rounded-[14px] p-1.5" />
           </div>
           <h2 className="text-2xl font-black text-white font-['Outfit']">
             {mode === 'signup' ? 'Join Cabby Golf' : 'Welcome Back'}
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-stone-400">
             {mode === 'signup' ? 'Create your profile to track your WHS Handicap Index.' : 'Sign in to access your clubhouse & leaderboards.'}
           </p>
         </div>
 
         {/* Mode Switcher */}
-        <div className="flex bg-[#0A0F1D] p-1 rounded-2xl border border-white/10">
+        <div className="flex bg-[#1E2118] p-1 rounded-2xl border border-white/10">
           <button
             type="button"
             onClick={() => { setMode('signup'); setErrorMsg(null); }}
             className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${mode === 'signup'
-                ? 'bg-gradient-to-r from-[#00FF87] to-[#00E676] text-[#040711] shadow-md'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-[#7FA65C] to-[#6B8E4E] text-[#14150F] shadow-md'
+                : 'text-stone-400 hover:text-white'
               }`}
           >
             Create Account
@@ -108,8 +108,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             type="button"
             onClick={() => { setMode('login'); setErrorMsg(null); }}
             className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${mode === 'login'
-                ? 'bg-gradient-to-r from-[#00FF87] to-[#00E676] text-[#040711] shadow-md'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-gradient-to-r from-[#7FA65C] to-[#6B8E4E] text-[#14150F] shadow-md'
+                : 'text-stone-400 hover:text-white'
               }`}
           >
             Sign In
@@ -122,9 +122,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {mode === 'signup' && (
             <>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Golfer Name / Nickname</label>
+                <label className="text-xs font-bold text-stone-300">Golfer Name / Nickname</label>
                 <div className="relative">
-                  <User size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                  <User size={16} className="absolute left-3.5 top-3 text-stone-400" />
                   <input
                     type="text"
                     required
@@ -137,9 +137,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Home Golf Course</label>
+                <label className="text-xs font-bold text-stone-300">Home Golf Course</label>
                 <div className="relative">
-                  <Flag size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                  <Flag size={16} className="absolute left-3.5 top-3 text-stone-400" />
                   <input
                     type="text"
                     placeholder="e.g. Pebble Beach Golf Links"
@@ -153,9 +153,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-300">Email Address</label>
+            <label className="text-xs font-bold text-stone-300">Email Address</label>
             <div className="relative">
-              <Mail size={16} className="absolute left-3.5 top-3 text-slate-400" />
+              <Mail size={16} className="absolute left-3.5 top-3 text-stone-400" />
               <input
                 type="email"
                 required
@@ -168,9 +168,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-300">Password</label>
+            <label className="text-xs font-bold text-stone-300">Password</label>
             <div className="relative">
-              <Lock size={16} className="absolute left-3.5 top-3 text-slate-400" />
+              <Lock size={16} className="absolute left-3.5 top-3 text-stone-400" />
               <input
                 type="password"
                 required

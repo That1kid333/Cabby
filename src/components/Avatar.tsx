@@ -8,12 +8,12 @@ interface AvatarProps {
 }
 
 const PALETTE = [
-  ['#00FF87', '#00A855'],
-  ['#00F0FF', '#0891B2'],
-  ['#FFD700', '#B45309'],
-  ['#818CF8', '#4338CA'],
-  ['#FB7185', '#9F1239'],
-  ['#38BDF8', '#0369A1']
+  ['#7FA65C', '#4F6B3A'],
+  ['#8FA6A3', '#4C7A82'],
+  ['#C9A24B', '#8A5A2E'],
+  ['#8A7CA8', '#5C4A78'],
+  ['#B5716B', '#7A3B35'],
+  ['#7A97A0', '#3F5F66']
 ];
 
 function hashString(value: string): number {
@@ -37,7 +37,7 @@ export const Avatar: React.FC<AvatarProps> = ({ name, size = 40, ring = true, cl
 
   return (
     <div
-      className={`flex items-center justify-center rounded-xl font-bold text-[#040711] shrink-0 ${ring ? 'ring-2 ring-[#05C46B]/60' : ''} ${className}`}
+      className={`flex items-center justify-center rounded-xl font-bold text-[#14150F] shrink-0 ${ring ? 'ring-2 ring-[#4F6B3A]/60' : ''} ${className}`}
       style={{
         width: size,
         height: size,

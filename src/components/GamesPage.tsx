@@ -80,9 +80,9 @@ export const GamesPage: React.FC = () => {
       <div className="glass-panel p-6 sm:p-8 rounded-3xl border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-white font-['Outfit'] flex items-center gap-2">
-            <Swords className="text-[#00FF87]" size={28} /> Games
+            <Swords className="text-[#7FA65C]" size={28} /> Games
           </h1>
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-stone-300">
             Start a live round with your buddies — everyone sees the leaderboard update hole by hole.
           </p>
         </div>
@@ -92,35 +92,35 @@ export const GamesPage: React.FC = () => {
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center py-16 text-slate-400">
+        <div className="flex items-center justify-center py-16 text-stone-400">
           <Loader2 className="animate-spin" size={24} />
         </div>
       )}
 
       {!loading && (
         <>
-          <GameSection title="Your Active Games" icon={<Swords size={16} className="text-[#00FF87]" />} games={myActiveGames} onSelect={setSelectedGameId} emptyText="No active games. Start one above." />
-          <GameSection title="Friends' Live Games" icon={<Users size={16} className="text-[#00FF87]" />} games={joinableFriendGames} onSelect={setSelectedGameId} emptyText="No joinable games from your friends right now." />
+          <GameSection title="Your Active Games" icon={<Swords size={16} className="text-[#7FA65C]" />} games={myActiveGames} onSelect={setSelectedGameId} emptyText="No active games. Start one above." />
+          <GameSection title="Friends' Live Games" icon={<Users size={16} className="text-[#7FA65C]" />} games={joinableFriendGames} onSelect={setSelectedGameId} emptyText="No joinable games from your friends right now." />
 
           {/* Trophy Case */}
-          <div className="glass-panel p-6 rounded-3xl space-y-3 border-[#FFD700]/30">
-            <h2 className="text-sm font-bold text-[#FFD700] uppercase tracking-wider flex items-center gap-2">
+          <div className="glass-panel p-6 rounded-3xl space-y-3 border-[#C9A24B]/30">
+            <h2 className="text-sm font-bold text-[#C9A24B] uppercase tracking-wider flex items-center gap-2">
               <Trophy size={16} /> Trophy Case ({trophies.length})
             </h2>
             {trophies.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4">No wins yet — win a game to start your trophy case.</p>
+              <p className="text-xs text-stone-400 text-center py-4">No wins yet — win a game to start your trophy case.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {trophies.map(g => (
                   <button
                     key={g.id}
                     onClick={() => setSelectedGameId(g.id)}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-[#FFD700]/10 border border-[#FFD700]/30 hover:border-[#FFD700]/60 text-left transition-all"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-[#C9A24B]/10 border border-[#C9A24B]/30 hover:border-[#C9A24B]/60 text-left transition-all"
                   >
-                    <Trophy size={20} className="text-[#FFD700] shrink-0" />
+                    <Trophy size={20} className="text-[#C9A24B] shrink-0" />
                     <div>
                       <p className="text-xs font-bold text-white">{g.courseName}</p>
-                      <p className="text-[10px] text-slate-400">{g.date} • beat {g.players.length - 1} other{g.players.length - 1 === 1 ? '' : 's'}</p>
+                      <p className="text-[10px] text-stone-400">{g.date} • beat {g.players.length - 1} other{g.players.length - 1 === 1 ? '' : 's'}</p>
                     </div>
                   </button>
                 ))}
@@ -129,11 +129,11 @@ export const GamesPage: React.FC = () => {
           </div>
 
           <div className="glass-panel p-6 rounded-3xl space-y-3">
-            <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <History size={16} className="text-[#00FF87]" /> Game History
+            <h2 className="text-sm font-bold text-stone-300 uppercase tracking-wider flex items-center gap-2">
+              <History size={16} className="text-[#7FA65C]" /> Game History
             </h2>
             {history_.length === 0 ? (
-              <p className="text-xs text-slate-400 text-center py-4">No completed games yet.</p>
+              <p className="text-xs text-stone-400 text-center py-4">No completed games yet.</p>
             ) : (
               <div className="space-y-2">
                 {history_.map(g => {
@@ -147,11 +147,11 @@ export const GamesPage: React.FC = () => {
                     >
                       <div>
                         <p className="text-sm font-bold text-white">{g.courseName}</p>
-                        <p className="text-[10px] text-slate-400">{g.date} • {g.holesPlayed} holes • {g.players.length} players</p>
+                        <p className="text-[10px] text-stone-400">{g.date} • {g.holesPlayed} holes • {g.players.length} players</p>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        {won && <Trophy size={14} className="text-[#FFD700]" />}
-                        <span className={`text-xs font-bold ${won ? 'text-[#FFD700]' : 'text-slate-300'}`}>{winner?.golferName || 'Unknown'}</span>
+                        {won && <Trophy size={14} className="text-[#C9A24B]" />}
+                        <span className={`text-xs font-bold ${won ? 'text-[#C9A24B]' : 'text-stone-300'}`}>{winner?.golferName || 'Unknown'}</span>
                       </div>
                     </button>
                   );
@@ -179,9 +179,9 @@ const GameSection: React.FC<{
   emptyText: string;
 }> = ({ title, icon, games, onSelect, emptyText }) => (
   <div className="glass-panel p-6 rounded-3xl space-y-3">
-    <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">{icon} {title}</h2>
+    <h2 className="text-sm font-bold text-stone-300 uppercase tracking-wider flex items-center gap-2">{icon} {title}</h2>
     {games.length === 0 ? (
-      <p className="text-xs text-slate-400 text-center py-4">{emptyText}</p>
+      <p className="text-xs text-stone-400 text-center py-4">{emptyText}</p>
     ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {games.map(g => {
@@ -190,18 +190,18 @@ const GameSection: React.FC<{
             <button
               key={g.id}
               onClick={() => onSelect(g.id)}
-              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-[#00FF87]/40 text-left transition-all space-y-2"
+              className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-[#7FA65C]/40 text-left transition-all space-y-2"
             >
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold text-white">{g.courseName}</p>
-                <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${g.status === 'live' ? 'bg-[#00FF87]/20 text-[#00FF87]' : 'bg-white/10 text-slate-300'}`}>
+                <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${g.status === 'live' ? 'bg-[#7FA65C]/20 text-[#7FA65C]' : 'bg-white/10 text-stone-300'}`}>
                   {g.status}
                 </span>
               </div>
               <div className="flex items-center -space-x-2">
                 {g.players.slice(0, 5).map(p => <Avatar key={p.id} name={p.golferName} size={24} />)}
               </div>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-stone-400">
                 {g.players.length} player{g.players.length === 1 ? '' : 's'} • {g.holesPlayed} holes {g.status === 'live' && `• ${leaderCount} scoring live`}
               </p>
             </button>

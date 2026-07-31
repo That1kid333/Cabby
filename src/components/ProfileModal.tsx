@@ -54,7 +54,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
         
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-all"
+          className="absolute top-5 right-5 p-2 rounded-xl bg-white/5 hover:bg-white/10 text-stone-400 hover:text-white transition-all"
         >
           <X size={20} />
         </button>
@@ -64,7 +64,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
             <Avatar name={currentUser.name} size={56} />
             <div>
               <h2 className="text-xl font-black text-white font-['Outfit']">{currentUser.name}</h2>
-              <p className="text-xs text-[#00FF87] font-bold">Friend Code: {currentUser.friendCode}</p>
+              <p className="text-xs text-[#7FA65C] font-bold">Friend Code: {currentUser.friendCode}</p>
             </div>
           </div>
 
@@ -78,7 +78,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-300">Golfer Name / Tag</label>
+            <label className="text-xs font-bold text-stone-300">Golfer Name / Tag</label>
             <input
               type="text"
               value={name}
@@ -88,7 +88,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-300">Home Golf Club</label>
+            <label className="text-xs font-bold text-stone-300">Home Golf Club</label>
             <input
               type="text"
               value={homeCourse}
@@ -98,7 +98,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-300">Target Handicap Index Goal</label>
+            <label className="text-xs font-bold text-stone-300">Target Handicap Index Goal</label>
             <input
               type="number"
               step="0.1"
@@ -109,7 +109,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-300">Bio / Golf Mottos</label>
+            <label className="text-xs font-bold text-stone-300">Bio / Golf Mottos</label>
             <input
               type="text"
               value={bio}

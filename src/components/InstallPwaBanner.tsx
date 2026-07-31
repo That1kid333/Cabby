@@ -27,27 +27,27 @@ export const InstallPwaBanner: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-20 sm:bottom-6 left-4 right-4 max-w-md mx-auto z-50 glass-panel p-4 rounded-2xl border-[#00FF87]/40 bg-gradient-to-r from-[#0C1A2E] to-[#070D18] shadow-2xl flex items-center justify-between gap-3">
+    <div className="fixed bottom-20 sm:bottom-6 left-4 right-4 max-w-md mx-auto z-50 glass-panel p-4 rounded-2xl border-[#7FA65C]/40 bg-gradient-to-r from-[#20241A] to-[#171911] shadow-2xl flex items-center justify-between gap-3">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[#05C46B]/20 text-[#00FF87] flex items-center justify-center font-bold">
+        <div className="w-10 h-10 rounded-xl bg-[#4F6B3A]/20 text-[#7FA65C] flex items-center justify-center font-bold">
           <Smartphone size={20} />
         </div>
         <div>
           <h4 className="text-xs font-extrabold text-white font-['Outfit']">Install Cabby App</h4>
-          <p className="text-[10px] text-slate-300">Add to Home Screen for fast offline round logging!</p>
+          <p className="text-[10px] text-stone-300">Add to Home Screen for fast offline round logging!</p>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
         <button
           onClick={handleInstallClick}
-          className="px-3 py-1.5 rounded-xl bg-[#05C46B] text-[#070B16] text-xs font-bold hover:bg-[#00FF87]"
+          className="px-3 py-1.5 rounded-xl bg-[#4F6B3A] text-[#171911] text-xs font-bold hover:bg-[#7FA65C]"
         >
           Install
         </button>
         <button
           onClick={() => setShowBanner(false)}
-          className="p-1 rounded-lg text-slate-400 hover:text-white"
+          className="p-1 rounded-lg text-stone-400 hover:text-white"
         >
           <X size={16} />
         </button>

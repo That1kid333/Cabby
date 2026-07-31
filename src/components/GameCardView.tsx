@@ -170,7 +170,7 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
         subtitle: `Final score: ${winner.total} over ${winner.holesCompleted} holes, beating ${game.players.length - 1} other golfer${game.players.length - 1 === 1 ? '' : 's'}.`,
         gameId: game.id
       });
-      confetti({ particleCount: 100, spread: 90, origin: { y: 0.6 }, colors: ['#00FF87', '#00E676', '#FFD700', '#FFFFFF'] });
+      confetti({ particleCount: 100, spread: 90, origin: { y: 0.6 }, colors: ['#7FA65C', '#6B8E4E', '#C9A24B', '#FFFFFF'] });
     }
 
     await refresh();
@@ -194,10 +194,10 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white font-bold">
+        <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-stone-400 hover:text-white font-bold">
           <ArrowLeft size={14} /> Back to Games
         </button>
-        <button onClick={() => setShowShare(true)} className="flex items-center gap-1.5 text-xs text-[#00FF87] hover:underline font-bold">
+        <button onClick={() => setShowShare(true)} className="flex items-center gap-1.5 text-xs text-[#7FA65C] hover:underline font-bold">
           <Share2 size={14} /> Share
         </button>
       </div>
@@ -206,15 +206,15 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider mb-2 ${
-              game.status === 'live' ? 'bg-[#00FF87]/20 text-[#00FF87] border border-[#00FF87]/40' :
-              game.status === 'completed' ? 'bg-[#FFD700]/20 text-[#FFD700] border border-[#FFD700]/40' :
-              'bg-white/10 text-slate-300 border border-white/20'
+              game.status === 'live' ? 'bg-[#7FA65C]/20 text-[#7FA65C] border border-[#7FA65C]/40' :
+              game.status === 'completed' ? 'bg-[#C9A24B]/20 text-[#C9A24B] border border-[#C9A24B]/40' :
+              'bg-white/10 text-stone-300 border border-white/20'
             }`}>
-              {game.status === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-[#00FF87]" />}
+              {game.status === 'live' && <span className="w-1.5 h-1.5 rounded-full bg-[#7FA65C]" />}
               {game.status}
             </span>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-['Outfit']">{game.courseName}</h1>
-            <p className="text-xs text-slate-400">{game.courseLocation} • {game.holesPlayed} holes • {game.date}</p>
+            <p className="text-xs text-stone-400">{game.courseLocation} • {game.holesPlayed} holes • {game.date}</p>
             {actionError && (
               <p className="text-xs font-bold text-red-400 bg-red-500/10 mt-2 p-2.5 rounded-xl border border-red-500/20 max-w-md">{actionError}</p>
             )}
@@ -245,7 +245,7 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
                 </button>
               )}
               {isCreator && game.status === 'completed' && !confirmDelete && (
-                <button onClick={() => setConfirmDelete(true)} className="text-xs text-slate-400 hover:text-red-400 font-bold px-2 py-2.5">
+                <button onClick={() => setConfirmDelete(true)} className="text-xs text-stone-400 hover:text-red-400 font-bold px-2 py-2.5">
                   Remove from history
                 </button>
               )}
@@ -257,8 +257,8 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
                   Not everyone's finished all {game.holesPlayed} holes. Ending now crowns whoever's lowest right now — only players who finished every hole will have it count toward their Handicap Index.
                 </p>
                 <div className="flex justify-end gap-2">
-                  <button onClick={() => setConfirmEnd(false)} className="text-[11px] text-slate-400 hover:text-white font-bold px-2 py-1">Cancel</button>
-                  <button onClick={handleCrownWinner} disabled={completing} className="text-[11px] bg-amber-500 text-[#070B16] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 disabled:opacity-50">
+                  <button onClick={() => setConfirmEnd(false)} className="text-[11px] text-stone-400 hover:text-white font-bold px-2 py-1">Cancel</button>
+                  <button onClick={handleCrownWinner} disabled={completing} className="text-[11px] bg-amber-500 text-[#171911] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 disabled:opacity-50">
                     {completing && <Loader2 size={12} className="animate-spin" />} End It Now
                   </button>
                 </div>
@@ -273,7 +273,7 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
                     : 'This deletes the game and all scores for good.'}
                 </p>
                 <div className="flex justify-end gap-2">
-                  <button onClick={() => setConfirmDelete(false)} className="text-[11px] text-slate-400 hover:text-white font-bold px-2 py-1">Cancel</button>
+                  <button onClick={() => setConfirmDelete(false)} className="text-[11px] text-stone-400 hover:text-white font-bold px-2 py-1">Cancel</button>
                   <button onClick={handleDeleteGame} disabled={deleting} className="text-[11px] bg-red-500 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 disabled:opacity-50">
                     {deleting && <Loader2 size={12} className="animate-spin" />} Delete
                   </button>
@@ -282,16 +282,16 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
             )}
 
             {allFinished && game.status === 'live' && (
-              <p className="text-[10px] text-slate-400 max-w-[220px] text-right">Posts everyone's score as a real round, updating their Handicap Index.</p>
+              <p className="text-[10px] text-stone-400 max-w-[220px] text-right">Posts everyone's score as a real round, updating their Handicap Index.</p>
             )}
           </div>
         </div>
 
         {game.status === 'completed' && game.winnerGolferId && (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#FFD700]/15 to-[#00FF87]/10 border border-[#FFD700]/40 flex items-center gap-3">
-            <Crown className="text-[#FFD700]" size={28} />
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-[#C9A24B]/15 to-[#7FA65C]/10 border border-[#C9A24B]/40 flex items-center gap-3">
+            <Crown className="text-[#C9A24B]" size={28} />
             <div>
-              <p className="text-xs text-[#FFD700] font-bold uppercase tracking-wider">Winner</p>
+              <p className="text-xs text-[#C9A24B] font-bold uppercase tracking-wider">Winner</p>
               <p className="text-lg font-extrabold text-white font-['Outfit']">
                 {game.players.find(p => p.golferId === game.winnerGolferId)?.golferName || 'Unknown'}
               </p>
@@ -302,32 +302,32 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
 
       {/* Live Leaderboard */}
       <div className="glass-panel p-6 rounded-3xl space-y-3">
-        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Leaderboard</h2>
+        <h2 className="text-sm font-bold text-stone-300 uppercase tracking-wider">Leaderboard</h2>
         {standings.map((s, i) => (
           <div
             key={s.player.id}
             className={`flex items-center justify-between p-3 rounded-2xl border ${
-              s.player.golferId === currentUser.id ? 'bg-[#05C46B]/10 border-[#00FF87]/40' : 'bg-white/5 border-white/10'
+              s.player.golferId === currentUser.id ? 'bg-[#4F6B3A]/10 border-[#7FA65C]/40' : 'bg-white/5 border-white/10'
             }`}
           >
             <div className="flex items-center gap-3">
-              <span className="w-6 text-center text-xs font-extrabold text-slate-400">{i + 1}</span>
+              <span className="w-6 text-center text-xs font-extrabold text-stone-400">{i + 1}</span>
               <Avatar name={s.player.golferName} size={36} />
               <div>
                 <p className="text-sm font-bold text-white">{s.player.golferName}</p>
-                <p className="text-[10px] text-slate-400">{s.player.teeName} • R {s.player.rating} / S {s.player.slope}</p>
+                <p className="text-[10px] text-stone-400">{s.player.teeName} • R {s.player.rating} / S {s.player.slope}</p>
               </div>
             </div>
             <div className="text-right">
               <div className="flex items-baseline justify-end gap-1.5">
                 <p className="text-xl font-black text-white font-['Outfit']">{s.holesCompleted > 0 ? s.total : '--'}</p>
                 {s.holesCompleted > 0 && (
-                  <span className="text-xs font-bold text-[#00FF87]">
+                  <span className="text-xs font-bold text-[#7FA65C]">
                     ({relativeToParLabel(s.total, Array.from({ length: s.holesCompleted }, (_, i) => holePar(i + 1)).reduce((a, b) => a + b, 0))})
                   </span>
                 )}
               </div>
-              <p className="text-[10px] text-slate-400">{s.holesCompleted === game.holesPlayed ? 'Finished' : s.holesCompleted > 0 ? `Thru ${s.holesCompleted}` : 'Not started'}</p>
+              <p className="text-[10px] text-stone-400">{s.holesCompleted === game.holesPlayed ? 'Finished' : s.holesCompleted > 0 ? `Thru ${s.holesCompleted}` : 'Not started'}</p>
             </div>
           </div>
         ))}
@@ -335,8 +335,8 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
 
       {/* Join Panel */}
       {!me && game.status !== 'completed' && (
-        <div className="glass-panel p-6 rounded-3xl space-y-3 border-[#00FF87]/30">
-          <h2 className="text-sm font-bold text-white flex items-center gap-2"><UserPlus size={16} className="text-[#00FF87]" /> Join This Game</h2>
+        <div className="glass-panel p-6 rounded-3xl space-y-3 border-[#7FA65C]/30">
+          <h2 className="text-sm font-bold text-white flex items-center gap-2"><UserPlus size={16} className="text-[#7FA65C]" /> Join This Game</h2>
           {matchingCourse ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {matchingCourse.tees.map(t => (
@@ -344,15 +344,15 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
                   key={t.id}
                   disabled={joining}
                   onClick={() => handleJoin(t)}
-                  className="p-2.5 rounded-xl border border-white/10 bg-white/5 hover:border-[#00FF87]/50 text-left transition-all disabled:opacity-50"
+                  className="p-2.5 rounded-xl border border-white/10 bg-white/5 hover:border-[#7FA65C]/50 text-left transition-all disabled:opacity-50"
                 >
                   <p className="text-xs font-bold text-white">{t.name}</p>
-                  <p className="text-[10px] text-slate-400">R: {t.rating} / S: {t.slope}</p>
+                  <p className="text-[10px] text-stone-400">R: {t.rating} / S: {t.slope}</p>
                 </button>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-slate-400">Loading course tees…</p>
+            <p className="text-xs text-stone-400">Loading course tees…</p>
           )}
           {joinError && <p className="text-xs font-bold text-red-400 bg-red-500/10 p-2.5 rounded-xl border border-red-500/20">{joinError}</p>}
         </div>
@@ -361,16 +361,16 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
       {/* Hole-by-hole entry for the current player */}
       {me && game.status === 'live' && (
         <div className="glass-panel p-6 rounded-3xl space-y-4">
-          <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-            <Flag size={16} className="text-[#00FF87]" /> Your Scorecard
+          <h2 className="text-sm font-bold text-stone-300 uppercase tracking-wider flex items-center gap-2">
+            <Flag size={16} className="text-[#7FA65C]" /> Your Scorecard
           </h2>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-stone-400">
             Enter total strokes taken, or shorthand relative to par: -1 birdie, E even, +2 double bogey. Tap a hole's par if it's wrong — it corrects it for everyone playing this course.
           </p>
           <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
             {Array.from({ length: game.holesPlayed }, (_, i) => i + 1).map(hole => (
               <div key={hole} className="text-center bg-white/5 p-2 rounded-xl border border-white/10">
-                <p className="text-[10px] text-slate-400 font-bold">#{hole}</p>
+                <p className="text-[10px] text-stone-400 font-bold">#{hole}</p>
                 {editingPar === hole ? (
                   <input
                     type="number"
@@ -379,13 +379,13 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
                     onChange={(e) => setParDraft(e.target.value)}
                     onBlur={commitParEdit}
                     onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
-                    className="w-full bg-transparent text-center text-[9px] text-[#00FF87] focus:outline-none"
+                    className="w-full bg-transparent text-center text-[9px] text-[#7FA65C] focus:outline-none"
                   />
                 ) : (
                   <button
                     type="button"
                     onClick={() => startEditPar(hole)}
-                    className={`text-[9px] underline decoration-dotted ${realHolePar(hole) ? 'text-slate-500 hover:text-[#00FF87]' : 'text-amber-500/80 hover:text-amber-400'}`}
+                    className={`text-[9px] underline decoration-dotted ${realHolePar(hole) ? 'text-stone-500 hover:text-[#7FA65C]' : 'text-amber-500/80 hover:text-amber-400'}`}
                     title={realHolePar(hole) ? "Tap to correct this hole's par" : 'Par not on file for this course — assumed 4, tap to set the real number'}
                   >
                     Par {holePar(hole)}
@@ -407,7 +407,7 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
 
       {me && game.status === 'lobby' && (
         <div className="glass-panel p-6 rounded-3xl text-center">
-          <p className="text-sm text-slate-300">You're in. Waiting for {isCreator ? 'you to start the round' : 'the host to start the round'}.</p>
+          <p className="text-sm text-stone-300">You're in. Waiting for {isCreator ? 'you to start the round' : 'the host to start the round'}.</p>
         </div>
       )}
 

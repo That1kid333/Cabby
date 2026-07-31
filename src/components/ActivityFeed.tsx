@@ -12,9 +12,9 @@ export const ActivityFeed: React.FC = () => {
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <div>
           <h2 className="text-xl font-extrabold text-white font-['Outfit'] flex items-center gap-2">
-            <MessageCircle className="text-[#00FF87]" size={20} /> Clubhouse Activity Feed
+            <MessageCircle className="text-[#7FA65C]" size={20} /> Clubhouse Activity Feed
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-stone-400">
             Recent scores, handicap drops, and round highlights logged by your golf buddies.
           </p>
         </div>
@@ -22,9 +22,9 @@ export const ActivityFeed: React.FC = () => {
 
       {activities.length === 0 && (
         <div className="text-center py-10 space-y-1">
-          <Flag className="mx-auto text-slate-500" size={28} />
-          <p className="text-sm text-slate-300">No activity yet.</p>
-          <p className="text-xs text-slate-400">Post your first round to get the clubhouse feed going.</p>
+          <Flag className="mx-auto text-stone-500" size={28} />
+          <p className="text-sm text-stone-300">No activity yet.</p>
+          <p className="text-xs text-stone-400">Post your first round to get the clubhouse feed going.</p>
         </div>
       )}
 
@@ -43,14 +43,14 @@ export const ActivityFeed: React.FC = () => {
                   <Avatar name={act.golferName} size={40} />
                   <div>
                     <p className="font-bold text-white text-sm">{act.golferName}</p>
-                    <p className="text-[11px] text-slate-400">{formatRelativeTime(act.timestamp)}</p>
+                    <p className="text-[11px] text-stone-400">{formatRelativeTime(act.timestamp)}</p>
                   </div>
                 </div>
 
                 {act.roundId && (
                   <button
                     onClick={() => verifyRound(act.roundId!)}
-                    className="px-3 py-1 rounded-full bg-[#05C46B]/20 text-[#00FF87] border border-[#05C46B]/40 text-xs font-bold flex items-center gap-1.5 hover:bg-[#05C46B]/30"
+                    className="px-3 py-1 rounded-full bg-[#4F6B3A]/20 text-[#7FA65C] border border-[#4F6B3A]/40 text-xs font-bold flex items-center gap-1.5 hover:bg-[#4F6B3A]/30"
                   >
                     <ShieldCheck size={14} /> Attest Score
                   </button>
@@ -60,7 +60,7 @@ export const ActivityFeed: React.FC = () => {
               {/* Title & Subtitle */}
               <div>
                 <h3 className="font-bold text-white text-base">{act.title}</h3>
-                <p className="text-xs text-slate-300">{act.subtitle}</p>
+                <p className="text-xs text-stone-300">{act.subtitle}</p>
               </div>
 
               {/* Reactions Bar */}
@@ -69,8 +69,8 @@ export const ActivityFeed: React.FC = () => {
                   onClick={() => reactToActivity(act.id, 'fire')}
                   className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
                     userReactions.includes('fire')
-                      ? 'bg-[#05C46B]/30 border-[#00FF87] text-[#00FF87]'
-                      : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                      ? 'bg-[#4F6B3A]/30 border-[#7FA65C] text-[#7FA65C]'
+                      : 'bg-white/5 border-white/10 text-stone-400 hover:text-white'
                   }`}
                 >
                   <Flame size={14} /> {act.reactions.fire || 0}
@@ -80,8 +80,8 @@ export const ActivityFeed: React.FC = () => {
                   onClick={() => reactToActivity(act.id, 'golf')}
                   className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
                     userReactions.includes('golf')
-                      ? 'bg-[#05C46B]/30 border-[#00FF87] text-[#00FF87]'
-                      : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                      ? 'bg-[#4F6B3A]/30 border-[#7FA65C] text-[#7FA65C]'
+                      : 'bg-white/5 border-white/10 text-stone-400 hover:text-white'
                   }`}
                 >
                   <Flag size={14} /> {act.reactions.golf || 0}
@@ -91,8 +91,8 @@ export const ActivityFeed: React.FC = () => {
                   onClick={() => reactToActivity(act.id, 'applause')}
                   className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
                     userReactions.includes('applause')
-                      ? 'bg-[#05C46B]/30 border-[#00FF87] text-[#00FF87]'
-                      : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                      ? 'bg-[#4F6B3A]/30 border-[#7FA65C] text-[#7FA65C]'
+                      : 'bg-white/5 border-white/10 text-stone-400 hover:text-white'
                   }`}
                 >
                   <ThumbsUp size={14} /> {act.reactions.applause || 0}
@@ -102,8 +102,8 @@ export const ActivityFeed: React.FC = () => {
                   onClick={() => reactToActivity(act.id, 'trophy')}
                   className={`px-3 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
                     userReactions.includes('trophy')
-                      ? 'bg-[#FFD700]/30 border-[#FFD700] text-[#FFD700]'
-                      : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                      ? 'bg-[#C9A24B]/30 border-[#C9A24B] text-[#C9A24B]'
+                      : 'bg-white/5 border-white/10 text-stone-400 hover:text-white'
                   }`}
                 >
                   <Trophy size={14} /> {act.reactions.trophy || 0}

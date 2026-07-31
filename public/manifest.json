@@ -4,8 +4,8 @@
   "description": "Track your World Handicap Index (WHS), calculate course handicaps, and compete on friend leaderboards.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0B132B",
-  "theme_color": "#05C46B",
+  "background_color": "#14150F",
+  "theme_color": "#4F6B3A",
   "orientation": "portrait",
   "icons": [
     {
