@@ -60,7 +60,17 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
     setError(null);
     try {
       const tees = await getExternalCourseTees(result.externalId);
-      setPendingTees({ result, tees });
+      if (tees.length === 0) {
+        // This course exists in OpenGolfAPI but has no tee-level rating/slope on file
+        // (common for smaller or private clubs) — fall through to manual entry instead
+        // of showing a picker with nothing to pick.
+        setError(`${result.name} doesn't have tee data on file yet — add its rating and slope from your scorecard below.`);
+        setManualName(result.name);
+        setManualLocation([result.city, result.state].filter(Boolean).join(', '));
+        setShowManualForm(true);
+      } else {
+        setPendingTees({ result, tees });
+      }
     } catch {
       setError('Could not load tee data for this course — try adding it manually.');
     } finally {
@@ -144,7 +154,7 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search for your course by name..."
-          className="w-full bg-[#0E1626] border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#00FF87]"
+          className="form-input form-input-icon"
         />
         {searching && <Loader2 size={16} className="absolute right-3.5 top-3 text-slate-400 animate-spin" />}
       </div>
@@ -205,13 +215,13 @@ export const CourseSearch: React.FC<CourseSearchProps> = ({ onSelect }) => {
       {showManualForm && (
         <div className="p-4 rounded-2xl bg-white/5 border border-[#00FF87]/30 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input type="text" placeholder="Course Name" value={manualName} onChange={(e) => setManualName(e.target.value)} className="bg-[#0E1626] border border-white/15 rounded-xl px-3 py-2 text-xs text-white" />
-            <input type="text" placeholder="Location (e.g. Austin, TX)" value={manualLocation} onChange={(e) => setManualLocation(e.target.value)} className="bg-[#0E1626] border border-white/15 rounded-xl px-3 py-2 text-xs text-white" />
-            <input type="text" placeholder="Tee Name (e.g. Blue)" value={manualTeeName} onChange={(e) => setManualTeeName(e.target.value)} className="bg-[#0E1626] border border-white/15 rounded-xl px-3 py-2 text-xs text-white" />
+            <input type="text" placeholder="Course Name" value={manualName} onChange={(e) => setManualName(e.target.value)} className="form-input form-input-sm" />
+            <input type="text" placeholder="Location (e.g. Austin, TX)" value={manualLocation} onChange={(e) => setManualLocation(e.target.value)} className="form-input form-input-sm" />
+            <input type="text" placeholder="Tee Name (e.g. Blue)" value={manualTeeName} onChange={(e) => setManualTeeName(e.target.value)} className="form-input form-input-sm" />
             <div className="grid grid-cols-3 gap-2">
-              <input type="number" step="0.1" placeholder="Rating" value={manualRating} onChange={(e) => setManualRating(Number(e.target.value))} className="bg-[#0E1626] border border-white/15 rounded-xl px-2 py-2 text-xs text-white" />
-              <input type="number" placeholder="Slope" value={manualSlope} onChange={(e) => setManualSlope(Number(e.target.value))} className="bg-[#0E1626] border border-white/15 rounded-xl px-2 py-2 text-xs text-white" />
-              <input type="number" placeholder="Par" value={manualPar} onChange={(e) => setManualPar(Number(e.target.value))} className="bg-[#0E1626] border border-white/15 rounded-xl px-2 py-2 text-xs text-white" />
+              <input type="number" step="0.1" placeholder="Rating" value={manualRating} onChange={(e) => setManualRating(Number(e.target.value))} className="form-input form-input-sm" />
+              <input type="number" placeholder="Slope" value={manualSlope} onChange={(e) => setManualSlope(Number(e.target.value))} className="form-input form-input-sm" />
+              <input type="number" placeholder="Par" value={manualPar} onChange={(e) => setManualPar(Number(e.target.value))} className="form-input form-input-sm" />
             </div>
           </div>
           <button type="button" onClick={handleManualSubmit} className="w-full bg-[#05C46B] text-[#070B16] font-bold py-2 rounded-xl text-xs hover:bg-[#00FF87]">

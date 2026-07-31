@@ -20,7 +20,9 @@ export async function loadCourses(): Promise<GolfCourse[]> {
   const { data, error } = await supabase.from('courses').select('*, tees:tee_boxes(*)');
   if (error || !data) return [];
 
-  return data.map((c: any) => ({
+  // Defensive: hide any course stuck with zero tees (e.g. from a partial save
+  // before this was guarded against) instead of surfacing an unpickable course.
+  return data.filter((c: any) => (c.tees || []).length > 0).map((c: any) => ({
     id: c.id,
     name: c.name,
     location: c.location,
@@ -67,7 +69,14 @@ export async function saveCourse(course: Omit<GolfCourse, 'id'>): Promise<GolfCo
     yardage: t.yardage
   }));
 
-  const { data: insertedTees } = await supabase.from('tee_boxes').insert(teeInserts).select();
+  const { data: insertedTees, error: tErr } = await supabase.from('tee_boxes').insert(teeInserts).select();
+
+  if (tErr || !insertedTees || insertedTees.length === 0) {
+    // Don't leave a tee-less course stranded in the shared database for the next
+    // golfer to get stuck on — roll back the course row if its tees failed to save.
+    await supabase.from('courses').delete().eq('id', insertedCourse.id);
+    return null;
+  }
 
   return {
     id: insertedCourse.id,

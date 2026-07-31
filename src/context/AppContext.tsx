@@ -28,6 +28,7 @@ interface AppContextType {
   updateProfile: (updatedData: Partial<GolferProfile>) => Promise<void>;
   postActivity: (payload: { type: ActivityItem['type']; title: string; subtitle: string }) => Promise<void>;
   bumpGamesWon: (golferId: string) => void;
+  applyGameResults: (results: { round: GolfRound; updatedGolfer: Partial<GolferProfile> & { id: string } }[]) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -437,6 +438,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const applyGameResults = (results: { round: GolfRound; updatedGolfer: Partial<GolferProfile> & { id: string } }[]) => {
+    setRounds(prev => [...results.map(r => r.round), ...prev]);
+    setGolfers(prev => prev.map(g => {
+      const match = results.find(r => r.updatedGolfer.id === g.id);
+      return match ? { ...g, ...match.updatedGolfer } : g;
+    }));
+    const myUpdate = results.find(r => r.updatedGolfer.id === currentUser?.id);
+    if (myUpdate) {
+      setCurrentUser(prev => (prev ? { ...prev, ...myUpdate.updatedGolfer } : prev));
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -459,7 +472,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         verifyRound,
         updateProfile,
         postActivity,
-        bumpGamesWon
+        bumpGamesWon,
+        applyGameResults
       }}
     >
       {children}

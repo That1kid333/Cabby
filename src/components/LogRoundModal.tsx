@@ -200,7 +200,7 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
                   type="number"
                   value={score}
                   onChange={(e) => setScore(Number(e.target.value))}
-                  className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-white font-black text-2xl font-['Outfit'] focus:outline-none focus:border-[#00FF87]"
+                  className="form-input font-black text-2xl font-['Outfit']"
                 />
               </div>
 
@@ -212,7 +212,7 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-white font-bold text-sm focus:outline-none focus:border-[#00FF87]"
+                  className="form-input font-bold"
                 />
               </div>
             </div>
@@ -250,7 +250,7 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
               <select
                 value={pcc}
                 onChange={(e) => setPcc(Number(e.target.value))}
-                className="w-full bg-[#0E1626] border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm font-semibold focus:outline-none focus:border-[#00FF87]"
+                className="form-input font-semibold"
               >
                 <option value={0}>0.0 (Normal Weather)</option>
                 <option value={-1}>-1.0 (Extremely Easy Conditions)</option>
@@ -269,7 +269,7 @@ export const LogRoundModal: React.FC<LogRoundModalProps> = ({ isOpen, onClose })
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="e.g. Great putting, birdie on #18!"
-                className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#00FF87]"
+                className="form-input"
               />
             </div>
           </div>

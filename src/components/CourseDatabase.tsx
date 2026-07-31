@@ -35,7 +35,7 @@ export const CourseDatabase: React.FC = () => {
               placeholder="Search courses or location..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-white/5 border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-[#00FF87]"
+              className="form-input form-input-icon"
             />
           </div>
           <button

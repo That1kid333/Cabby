@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
-import { Game, GamePlayer, GameScore, GameStatus, TeeBox } from '../types';
+import { Game, GamePlayer, GameScore, GameStatus, TeeBox, GolfRound, GolferProfile } from '../types';
+import { calculateDifferential, calculateHandicapIndex } from './whsEngine';
 
 function mapGame(row: any): Game {
   return {
@@ -156,4 +157,109 @@ export function playerProgress(game: Game, golferId: string) {
   const holeScores = game.scores.filter(s => s.golferId === golferId);
   const total = holeScores.reduce((sum, s) => sum + s.strokes, 0);
   return { total, holesCompleted: holeScores.length };
+}
+
+export interface GameRoundResult {
+  round: GolfRound;
+  updatedGolfer: Partial<GolferProfile> & { id: string };
+}
+
+/**
+ * Posts every fully-finished player's game total as a real WHS round, so playing
+ * a Game with friends feeds the same Handicap Index math as posting a round solo
+ * would — otherwise Games and Rounds would silently diverge into two unrelated
+ * scoring systems and the leaderboard would stop reflecting how people actually play.
+ */
+export async function postGameResultsAsRounds(
+  game: Game,
+  existingRounds: GolfRound[],
+  golfers: GolferProfile[]
+): Promise<GameRoundResult[]> {
+  if (!supabase) return [];
+
+  const results: GameRoundResult[] = [];
+
+  for (const player of game.players) {
+    const { total, holesCompleted } = playerProgress(game, player.golferId);
+    if (holesCompleted !== game.holesPlayed) continue;
+
+    const differential = calculateDifferential(total, player.rating, player.slope, 0, game.holesPlayed);
+
+    const { data: inserted, error } = await supabase
+      .from('rounds')
+      .insert({
+        golfer_id: player.golferId,
+        course_name: game.courseName,
+        tee_name: player.teeName,
+        date: game.date,
+        score: total,
+        holes_played: game.holesPlayed,
+        rating: player.rating,
+        slope: player.slope,
+        par: player.par,
+        pcc: 0,
+        differential,
+        notes: `Posted automatically from a Cabby Game at ${game.courseName}`
+      })
+      .select()
+      .single();
+
+    if (error || !inserted) continue;
+
+    const newRound: GolfRound = {
+      id: inserted.id,
+      golferId: player.golferId,
+      golferName: player.golferName,
+      courseId: game.courseName,
+      courseName: game.courseName,
+      teeName: player.teeName,
+      date: game.date,
+      score: total,
+      holesPlayed: game.holesPlayed,
+      rating: player.rating,
+      slope: player.slope,
+      par: player.par,
+      pcc: 0,
+      differential,
+      notes: inserted.notes,
+      verifiedCount: 1
+    };
+
+    const golfer = golfers.find(g => g.id === player.golferId);
+    const golferRounds = [...existingRounds.filter(r => r.golferId === player.golferId), newRound];
+    const { handicapIndex } = calculateHandicapIndex(golferRounds);
+
+    const updatedFields = {
+      total_rounds: golferRounds.length,
+      best_gross_score: Math.min(golfer?.bestGrossScore ?? 999, total),
+      best_differential: Math.min(golfer?.bestDifferential ?? 99.9, differential),
+      handicap_index: handicapIndex,
+      lowest_handicap_index: Math.min(golfer?.lowestHandicapIndex ?? 54.0, handicapIndex)
+    };
+
+    await supabase.from('golfers').update(updatedFields).eq('id', player.golferId);
+
+    await supabase.from('activity_feed').insert({
+      golfer_id: player.golferId,
+      round_id: newRound.id,
+      type: 'round_logged',
+      title: `Logged ${game.holesPlayed} holes in a Game at ${game.courseName}`,
+      subtitle: `Shot ${total} • Differential: ${differential}`,
+      reactions: { fire: 0, golf: 0, applause: 0, trophy: 0 }
+    });
+
+    results.push({
+      round: newRound,
+      updatedGolfer: {
+        id: player.golferId,
+        totalRounds: updatedFields.total_rounds,
+        bestGrossScore: updatedFields.best_gross_score,
+        bestDifferential: updatedFields.best_differential,
+        handicapIndex: updatedFields.handicap_index,
+        lowestHandicapIndex: updatedFields.lowest_handicap_index
+      }
+    });
+  }
+
+  return results;
 }

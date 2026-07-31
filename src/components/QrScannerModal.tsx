@@ -157,7 +157,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({ isOpen, onClose 
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
               placeholder="e.g. CB-1234-AB"
-              className="flex-1 bg-[#0A0F1D] border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm font-mono font-bold uppercase focus:outline-none focus:border-[#00FF87]"
+              className="form-input flex-1 font-mono font-bold uppercase"
             />
             <button type="submit" className="btn-primary text-xs px-4 py-2.5 font-extrabold">
               Connect

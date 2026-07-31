@@ -61,7 +61,7 @@ export const CourseHandicapCalculator: React.FC = () => {
                 step="0.1"
                 value={customIndex}
                 onChange={(e) => setCustomIndex(e.target.value)}
-                className="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-white font-bold font-['Outfit'] text-lg focus:outline-none focus:border-[#00FF87] transition-all"
+                className="form-input font-bold font-['Outfit'] text-lg"
                 placeholder="e.g. 7.2"
               />
               <button
@@ -88,7 +88,7 @@ export const CourseHandicapCalculator: React.FC = () => {
                   setSelectedTeeId(found.tees[0].id);
                 }
               }}
-              className="w-full bg-[#0E1626] border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm font-semibold focus:outline-none focus:border-[#00FF87]"
+              className="form-input font-semibold"
             >
               {courses.map(c => (
                 <option key={c.id} value={c.id}>
@@ -138,7 +138,7 @@ export const CourseHandicapCalculator: React.FC = () => {
             <select
               value={allowance}
               onChange={(e) => setAllowance(Number(e.target.value))}
-              className="w-full bg-[#0E1626] border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm font-semibold focus:outline-none focus:border-[#00FF87]"
+              className="form-input font-semibold"
             >
               <option value={95}>Individual Stroke Play (95%)</option>
               <option value={100}>Match Play (100%)</option>

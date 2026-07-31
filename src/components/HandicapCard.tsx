@@ -65,9 +65,15 @@ export const HandicapCard: React.FC<HandicapCardProps> = ({
             </div>
 
             {/* WHS Rule Quick Summary */}
-            <p className="text-sm text-slate-300 max-w-xl leading-relaxed">
-              Calculated using the average of your best <span className="text-[#00FF87] font-bold">{differentialsUsed} differentials</span> from your last <span className="text-white font-bold">{totalEvaluatedRounds} rounds</span>. Represents your potential scoring ability, not your average score!
-            </p>
+            {totalEvaluatedRounds === 0 ? (
+              <p className="text-sm text-slate-300 max-w-xl leading-relaxed">
+                <span className="text-[#00FF87] font-bold">54.0 is the official WHS starting point</span> for every golfer with no rounds on file yet — it's the maximum index allowed, not a score. It's not a placeholder or a bug: post your first round below and it will drop to reflect your real ability.
+              </p>
+            ) : (
+              <p className="text-sm text-slate-300 max-w-xl leading-relaxed">
+                Calculated using the average of your best <span className="text-[#00FF87] font-bold">{differentialsUsed} differentials</span> from your last <span className="text-white font-bold">{totalEvaluatedRounds} rounds</span>. Represents your potential scoring ability, not your average score!
+              </p>
+            )}
 
             {/* Quick Action Buttons */}
             <div className="flex flex-wrap items-center gap-3 pt-2">

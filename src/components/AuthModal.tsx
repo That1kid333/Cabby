@@ -131,7 +131,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     placeholder="e.g. Alex Rivera"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[#0A0F1D] border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00FF87]"
+                    className="form-input form-input-icon"
                   />
                 </div>
               </div>
@@ -145,7 +145,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     placeholder="e.g. Pebble Beach Golf Links"
                     value={homeCourse}
                     onChange={(e) => setHomeCourse(e.target.value)}
-                    className="w-full bg-[#0A0F1D] border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00FF87]"
+                    className="form-input form-input-icon"
                   />
                 </div>
               </div>
@@ -162,7 +162,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 placeholder="you@golfclub.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[#0A0F1D] border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00FF87]"
+                className="form-input form-input-icon"
               />
             </div>
           </div>
@@ -177,7 +177,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[#0A0F1D] border border-white/15 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00FF87]"
+                className="form-input form-input-icon"
               />
             </div>
           </div>

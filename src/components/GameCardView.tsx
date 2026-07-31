@@ -4,7 +4,7 @@ import confetti from 'canvas-confetti';
 import { useApp } from '../context/AppContext';
 import { Avatar } from './Avatar';
 import { Game, TeeBox } from '../types';
-import { fetchGame, subscribeToGame, setGameStatus, postHoleScore, joinGame, completeGame, playerProgress } from '../lib/games';
+import { fetchGame, subscribeToGame, setGameStatus, postHoleScore, joinGame, completeGame, playerProgress, postGameResultsAsRounds } from '../lib/games';
 
 interface GameCardViewProps {
   game: Game;
@@ -13,7 +13,7 @@ interface GameCardViewProps {
 }
 
 export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, onBack, onGameUpdated }) => {
-  const { currentUser, courses, golfers, postActivity, bumpGamesWon } = useApp();
+  const { currentUser, courses, golfers, rounds, postActivity, bumpGamesWon, applyGameResults } = useApp();
   const [game, setGame] = useState<Game>(initialGame);
   const [myScores, setMyScores] = useState<Record<number, string>>({});
   const [joining, setJoining] = useState(false);
@@ -87,6 +87,11 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
     await completeGame(game.id, winner.player.golferId, winnerGolfer?.gamesWon ?? 0);
     bumpGamesWon(winner.player.golferId);
 
+    // Every finished player's total posts as a real WHS round, so playing a Game
+    // feeds the same Handicap Index math as posting a round solo would.
+    const roundResults = await postGameResultsAsRounds(game, rounds, golfers);
+    applyGameResults(roundResults);
+
     if (winner.player.golferId === currentUser.id) {
       await postActivity({
         type: 'game_won',
@@ -128,14 +133,17 @@ export const GameCardView: React.FC<GameCardViewProps> = ({ game: initialGame, o
           )}
 
           {isCreator && game.status === 'live' && (
-            <button
-              onClick={handleCrownWinner}
-              disabled={!allFinished || completing}
-              className="btn-primary text-xs px-4 py-2.5 font-black flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {completing ? <Loader2 size={14} className="animate-spin" /> : <Trophy size={14} />}
-              {allFinished ? 'Crown The Winner' : 'Waiting For All Players'}
-            </button>
+            <div className="text-right space-y-1">
+              <button
+                onClick={handleCrownWinner}
+                disabled={!allFinished || completing}
+                className="btn-primary text-xs px-4 py-2.5 font-black flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {completing ? <Loader2 size={14} className="animate-spin" /> : <Trophy size={14} />}
+                {allFinished ? 'Crown The Winner' : 'Waiting For All Players'}
+              </button>
+              {allFinished && <p className="text-[10px] text-slate-400 max-w-[220px]">Posts everyone's score as a real round, updating their Handicap Index.</p>}
+            </div>
           )}
         </div>
 

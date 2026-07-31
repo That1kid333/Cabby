@@ -69,7 +69,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-[#0A0F1D] border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm"
+              className="form-input"
             />
           </div>
 
@@ -79,7 +79,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               type="text"
               value={homeCourse}
               onChange={(e) => setHomeCourse(e.target.value)}
-              className="w-full bg-[#0A0F1D] border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm"
+              className="form-input"
             />
           </div>
 
@@ -90,7 +90,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               step="0.1"
               value={targetHandicap}
               onChange={(e) => setTargetHandicap(Number(e.target.value))}
-              className="w-full bg-[#0A0F1D] border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm"
+              className="form-input"
             />
           </div>
 
@@ -100,7 +100,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
               type="text"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              className="w-full bg-[#0A0F1D] border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm"
+              className="form-input"
             />
           </div>
 
