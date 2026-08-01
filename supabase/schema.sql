@@ -187,6 +187,10 @@ ALTER TABLE public.game_players ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.game_scores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.game_bets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.game_bet_participants ENABLE ROW LEVEL SECURITY;
+-- friendships never got explicit RLS/policies at all — same silent-failure risk
+-- as courses/tee_boxes had (see note above). Adding a friend by code could fail
+-- with zero visible error if RLS ever got flipped on for this table.
+ALTER TABLE public.friendships ENABLE ROW LEVEL SECURITY;
 
 -- Policies are dropped-and-recreated so this whole file is safe to re-run
 -- against a database that already has an earlier version of these policies.
@@ -273,6 +277,11 @@ DROP POLICY IF EXISTS "Users can add bet participants" ON public.game_bet_partic
 CREATE POLICY "Users can add bet participants" ON public.game_bet_participants FOR INSERT WITH CHECK (true);
 DROP POLICY IF EXISTS "Users can update bet participants" ON public.game_bet_participants;
 CREATE POLICY "Users can update bet participants" ON public.game_bet_participants FOR UPDATE USING (true);
+
+DROP POLICY IF EXISTS "Public friendships read access" ON public.friendships;
+CREATE POLICY "Public friendships read access" ON public.friendships FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can add friendships" ON public.friendships;
+CREATE POLICY "Users can add friendships" ON public.friendships FOR INSERT WITH CHECK (true);
 
 -- Live updates: add the game tables to Supabase's realtime publication so
 -- players see each other's scores and joins update without a manual refresh.

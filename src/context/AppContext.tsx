@@ -328,15 +328,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addFriendByCode = async (code: string) => {
     if (!currentUser) return { success: false, message: 'Please sign in first.' };
     const cleanCode = code.trim().toUpperCase();
-    const found = golfers.find(g => g.friendCode.toUpperCase() === cleanCode);
 
-    if (!found) return { success: false, message: 'Invalid friend code.' };
+    // Local `golfers` state is only loaded once at app start — if your buddy
+    // signed up after your page loaded, they won't be in it yet. Fall back to
+    // a live lookup instead of calling a real code "invalid".
+    let found = golfers.find(g => g.friendCode.toUpperCase() === cleanCode);
+    if (!found && supabase) {
+      const { data } = await supabase.from('golfers').select('*').ilike('friend_code', cleanCode).maybeSingle();
+      if (data) {
+        found = mapGolfer(data);
+        setGolfers(prev => (prev.some(g => g.id === found!.id) ? prev : [...prev, found!]));
+      }
+    }
+
+    if (!found) return { success: false, message: "That code doesn't match any golfer. Double-check it and try again." };
     if (found.id === currentUser.id) return { success: false, message: 'This is your own code!' };
     if (currentUser.friends.includes(found.id)) return { success: false, message: `You're already connected with ${found.name}.` };
 
     if (supabase) {
       const { error } = await supabase.from('friendships').insert({ golfer_id: currentUser.id, friend_id: found.id });
-      if (error) return { success: false, message: 'Could not save this connection. Try again.' };
+      if (error) return { success: false, message: `Could not save this connection: ${error.message}` };
     }
 
     const updatedUser = { ...currentUser, friends: [...currentUser.friends, found.id] };
